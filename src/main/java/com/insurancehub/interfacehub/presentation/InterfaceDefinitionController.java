@@ -1,6 +1,8 @@
 package com.insurancehub.interfacehub.presentation;
 
 import com.insurancehub.interfacehub.application.DuplicateCodeException;
+import com.insurancehub.interfacehub.application.execution.ExecutionNotAllowedException;
+import com.insurancehub.interfacehub.application.execution.InterfaceExecutionService;
 import com.insurancehub.interfacehub.application.InterfaceDefinitionService;
 import com.insurancehub.interfacehub.application.InternalSystemService;
 import com.insurancehub.interfacehub.application.PartnerCompanyService;
@@ -9,7 +11,9 @@ import com.insurancehub.interfacehub.domain.InterfaceStatus;
 import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.presentation.form.InterfaceDefinitionForm;
+import com.insurancehub.interfacehub.presentation.form.ManualExecutionForm;
 import jakarta.validation.Valid;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -28,15 +32,18 @@ public class InterfaceDefinitionController {
     private final InterfaceDefinitionService interfaceDefinitionService;
     private final PartnerCompanyService partnerCompanyService;
     private final InternalSystemService internalSystemService;
+    private final InterfaceExecutionService interfaceExecutionService;
 
     public InterfaceDefinitionController(
             InterfaceDefinitionService interfaceDefinitionService,
             PartnerCompanyService partnerCompanyService,
-            InternalSystemService internalSystemService
+            InternalSystemService internalSystemService,
+            InterfaceExecutionService interfaceExecutionService
     ) {
         this.interfaceDefinitionService = interfaceDefinitionService;
         this.partnerCompanyService = partnerCompanyService;
         this.internalSystemService = internalSystemService;
+        this.interfaceExecutionService = interfaceExecutionService;
     }
 
     @ModelAttribute("protocolOptions")
@@ -98,9 +105,37 @@ public class InterfaceDefinitionController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        model.addAttribute("activeNav", "interfaces");
-        model.addAttribute("interfaceDefinition", interfaceDefinitionService.getDetail(id));
+        addDetailModel(id, model);
+        model.addAttribute("manualExecutionForm", new ManualExecutionForm());
         return "admin/interfaces/detail";
+    }
+
+    @PostMapping("/{id}/execute")
+    public String executeManual(
+            @PathVariable Long id,
+            @Valid @ModelAttribute("manualExecutionForm") ManualExecutionForm form,
+            BindingResult bindingResult,
+            Model model,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            addDetailModel(id, model);
+            return "admin/interfaces/detail";
+        }
+
+        try {
+            Long executionId = interfaceExecutionService.executeManual(
+                    id,
+                    form.getRequestPayload(),
+                    authentication == null ? "anonymous" : authentication.getName()
+            ).getId();
+            redirectAttributes.addFlashAttribute("successMessage", "Manual execution finished.");
+            return "redirect:/admin/executions/" + executionId;
+        } catch (ExecutionNotAllowedException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", exception.getMessage());
+            return "redirect:/admin/interfaces/" + id;
+        }
     }
 
     @GetMapping("/{id}/edit")
@@ -153,5 +188,11 @@ public class InterfaceDefinitionController {
         model.addAttribute("partnerOptions", partnerCompanyService.findActive());
         model.addAttribute("systemOptions", internalSystemService.findActive());
         return "admin/interfaces/form";
+    }
+
+    private void addDetailModel(Long id, Model model) {
+        model.addAttribute("activeNav", "interfaces");
+        model.addAttribute("interfaceDefinition", interfaceDefinitionService.getDetail(id));
+        model.addAttribute("recentExecutions", interfaceExecutionService.recentExecutionsForInterface(id));
     }
 }

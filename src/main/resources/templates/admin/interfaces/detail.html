@@ -38,7 +38,7 @@
             </div>
         </div>
 
-        <section class="panel">
+        <section class="panel spacing-bottom">
             <dl class="detail-grid">
                 <div class="detail-item">
                     <dt>Interface code</dt>
@@ -78,9 +78,73 @@
                 </div>
                 <div class="detail-item full">
                     <dt>Phase note</dt>
-                    <dd>Execution, protocol-specific settings, retries, and monitoring are intentionally deferred to later phases.</dd>
+                    <dd>Phase 2 uses protocol-specific mock executors. Real external integrations are still deferred.</dd>
                 </div>
             </dl>
+        </section>
+
+        <section class="panel spacing-bottom">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Manual execution</p>
+                    <h3>Run this interface</h3>
+                </div>
+                <span class="status"
+                      th:classappend="${interfaceDefinition.status.name() == 'ACTIVE'} ? ' status-active' : ' status-inactive'"
+                      th:text="${interfaceDefinition.status}">ACTIVE</span>
+            </div>
+            <form class="form-grid panel-body"
+                  th:action="@{/admin/interfaces/{id}/execute(id=${interfaceDefinition.id})}"
+                  th:object="${manualExecutionForm}"
+                  method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <label>
+                    Request payload
+                    <textarea th:field="*{requestPayload}" placeholder='Optional mock request payload. Include FAIL to simulate failure.'></textarea>
+                    <span class="field-error" th:if="${#fields.hasErrors('requestPayload')}" th:errors="*{requestPayload}">Too long</span>
+                </label>
+                <div class="form-actions">
+                    <button class="button primary" type="submit" th:disabled="${interfaceDefinition.status.name() != 'ACTIVE'}">Execute now</button>
+                    <p class="help-text">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Recent activity</p>
+                    <h3>Last executions</h3>
+                </div>
+                <a th:href="@{/admin/executions(keyword=${interfaceDefinition.interfaceCode})}">View all</a>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Execution No</th>
+                    <th>Trigger</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="execution : ${recentExecutions}">
+                    <td th:text="${execution.executionNo}">EXE-202604210001</td>
+                    <td th:text="${execution.triggerType}">MANUAL</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(execution.executionStatus.name())}"
+                              th:text="${execution.executionStatus}">SUCCESS</span>
+                    </td>
+                    <td th:text="${execution.startedAt == null ? '-' : #temporals.format(execution.startedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-04-21</td>
+                    <td><a th:href="@{/admin/executions/{id}(id=${execution.id})}">Detail</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(recentExecutions)}">
+                    <td colspan="5" class="empty-state">No executions yet.</td>
+                </tr>
+                </tbody>
+            </table>
         </section>
     </main>
 </div>

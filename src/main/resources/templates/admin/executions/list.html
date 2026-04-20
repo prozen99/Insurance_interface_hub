@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Executions | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Execution history</p>
+            <h2>Interface executions</h2>
+            <p class="lead">Review mock execution outcomes, filter failures, and open detail pages for step logs and retry actions.</p>
+        </header>
+
+        <form class="filter-form" method="get" th:action="@{/admin/executions}">
+            <label>
+                Search
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Execution no, interface code, or name">
+            </label>
+            <label>
+                Protocol
+                <select name="protocolType">
+                    <option value="">All protocols</option>
+                    <option th:each="protocol : ${protocolOptions}"
+                            th:value="${protocol}"
+                            th:text="${protocol}"
+                            th:selected="${protocol == selectedProtocolType}">REST</option>
+                </select>
+            </label>
+            <label>
+                Status
+                <select name="executionStatus">
+                    <option value="">All statuses</option>
+                    <option th:each="status : ${executionStatusOptions}"
+                            th:value="${status}"
+                            th:text="${status}"
+                            th:selected="${status == selectedExecutionStatus}">SUCCESS</option>
+                </select>
+            </label>
+            <button class="button" type="submit">Filter</button>
+        </form>
+
+        <div class="toolbar">
+            <p class="help-text" th:text="${#lists.size(executions)} + ' executions'">0 executions</p>
+            <div class="toolbar-actions">
+                <a class="button" th:href="@{/admin/executions}">Reset</a>
+                <a class="button warning" th:href="@{/admin/executions/failed}">Failed only</a>
+            </div>
+        </div>
+
+        <section class="panel">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Execution No</th>
+                    <th>Interface</th>
+                    <th>Protocol</th>
+                    <th>Trigger</th>
+                    <th>Status</th>
+                    <th>Started</th>
+                    <th>Duration</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="execution : ${executions}">
+                    <td><a th:href="@{/admin/executions/{id}(id=${execution.id})}" th:text="${execution.executionNo}">EXE-202604210001</a></td>
+                    <td th:text="${execution.interfaceDefinition.interfaceCode}">IF_REST_POLICY_001</td>
+                    <td th:text="${execution.protocolType}">REST</td>
+                    <td th:text="${execution.triggerType}">MANUAL</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(execution.executionStatus.name())}"
+                              th:text="${execution.executionStatus}">SUCCESS</span>
+                    </td>
+                    <td th:text="${execution.startedAt == null ? '-' : #temporals.format(execution.startedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-04-21</td>
+                    <td th:text="${execution.durationMs == null ? '-' : execution.durationMs + ' ms'}">12 ms</td>
+                    <td><a th:href="@{/admin/executions/{id}(id=${execution.id})}">Detail</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(executions)}">
+                    <td colspan="8" class="empty-state">No executions match the current filter.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

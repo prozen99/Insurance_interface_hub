@@ -278,6 +278,29 @@ a {
     background: #edf1f3;
 }
 
+.status-success,
+.status-done {
+    color: var(--success-text);
+    background: var(--success-bg);
+}
+
+.status-failed,
+.status-cancelled {
+    color: var(--error-text);
+    background: var(--error-bg);
+}
+
+.status-running,
+.status-waiting {
+    color: #815006;
+    background: #fff4d6;
+}
+
+.status-pending {
+    color: #31566c;
+    background: #e5f2f8;
+}
+
 .form-grid,
 .filter-form {
     display: grid;
@@ -324,6 +347,7 @@ textarea {
 .form-actions {
     display: flex;
     gap: 10px;
+    align-items: center;
     margin-top: 6px;
 }
 
@@ -353,6 +377,11 @@ textarea {
     border-color: var(--warning);
     color: #ffffff;
     background: var(--warning);
+}
+
+.button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
 }
 
 .button.full-width {
@@ -405,6 +434,50 @@ textarea {
     margin: 0;
 }
 
+.panel-header,
+.panel-body {
+    padding: 18px 20px;
+}
+
+.panel-header {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--line);
+}
+
+.panel-header h3 {
+    margin: 0;
+    font-size: 20px;
+}
+
+.spacing-bottom {
+    margin-bottom: 24px;
+}
+
+.spacing-top {
+    margin-top: 24px;
+}
+
+.execution-layout {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.payload {
+    min-height: 180px;
+    margin: 0;
+    padding: 18px 20px;
+    overflow: auto;
+    color: #26343d;
+    background: #f4f7f8;
+    font-family: Consolas, "Courier New", monospace;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 .login-body {
     display: grid;
     min-height: 100vh;
@@ -443,7 +516,7 @@ textarea {
     }
 
     .navigation {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
     }
 
     .logout-form {
@@ -452,7 +525,8 @@ textarea {
 
     .summary-grid,
     .module-grid,
-    .detail-grid {
+    .detail-grid,
+    .execution-layout {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
@@ -470,6 +544,7 @@ textarea {
     .summary-grid,
     .module-grid,
     .detail-grid,
+    .execution-layout,
     .filter-form {
         grid-template-columns: 1fr;
     }
