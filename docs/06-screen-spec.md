@@ -1,13 +1,13 @@
 # Screen Spec
 
-Phase 1 uses Thymeleaf for the admin UI.
+Phase 2 uses Thymeleaf for the admin UI.
 
 ## Common Layout
 
 Admin pages share:
 
 - Left navigation
-- Phase 1 product branding
+- Phase 2 product branding
 - Logout button
 - Flash success/error messages
 - Table-based enterprise admin layout
@@ -16,111 +16,75 @@ Navigation:
 
 - Dashboard
 - Interfaces
+- Executions
 - Partners
 - Internal Systems
-
-## Login
-
-Path: `/login`
-
-Fields:
-
-- Login ID
-- Password
-
-Behavior:
-
-- Invalid credentials return to `/login?error`.
-- Logout returns to `/login?logout`.
 
 ## Dashboard
 
 Path: `/admin`
 
-Cards:
+Metrics:
 
 - Total interfaces
 - Active interfaces
+- Today success
+- Today failure
+- Pending retries
 - Partner companies
 - Internal systems
 
-Protocol cards:
+## Interface Detail
 
-- REST
-- SOAP
-- MQ
-- Batch
-- SFTP
-- FTP
+Path: `/admin/interfaces/{id}`
 
-## Partner Company Screens
+Phase 2 additions:
 
-Paths:
+- Manual execution form
+- Optional request payload textarea
+- Execute now button
+- Recent execution table
+- Link to execution detail
 
-- `/admin/partners`
-- `/admin/partners/new`
-- `/admin/partners/{id}/edit`
+Inactive interfaces show the execution button disabled and server-side execution is rejected.
 
-Fields:
+## Execution History
 
-- Partner code
-- Partner name
-- Status
-- Description
+Path: `/admin/executions`
 
-## Internal System Screens
-
-Paths:
-
-- `/admin/systems`
-- `/admin/systems/new`
-- `/admin/systems/{id}/edit`
-
-Fields:
-
-- System code
-- System name
-- Owner department
-- Status
-- Description
-
-## Interface Definition Screens
-
-Paths:
-
-- `/admin/interfaces`
-- `/admin/interfaces/new`
-- `/admin/interfaces/{id}`
-- `/admin/interfaces/{id}/edit`
-
-List filters:
+Filters:
 
 - Keyword
-- Protocol type
+- Protocol
 - Status
 
-Fields:
+Table columns:
 
-- Interface code
-- Interface name
-- Protocol type
-- Direction
+- Execution No
+- Interface
+- Protocol
+- Trigger
 - Status
-- Partner company
-- Internal system
-- Description
+- Started
+- Duration
+- Action
 
-Detail actions:
+## Execution Detail
 
-- Edit
-- Enable
-- Disable
+Path: `/admin/executions/{id}`
 
-## Future Screens
+Sections:
 
-- Protocol-specific configuration forms
-- Execution history
-- Retry queue
-- Batch schedule
-- Monitoring dashboard
-- Audit log viewer
+- Execution summary
+- Step logs
+- Request payload
+- Response payload
+- Retry tasks
+
+Failed executions show a retry button.
+
+## Failed Execution Shortcut
+
+Path: `/admin/executions/failed`
+
+Shows execution history filtered to FAILED status.

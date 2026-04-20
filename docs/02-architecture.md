@@ -2,62 +2,56 @@
 
 ## Architecture Style
 
-Insurance Interface Hub starts as a modular monolith. It is one Spring Boot application with clear internal package boundaries. This keeps local development simple while allowing the codebase to grow toward protocol-specific modules.
-
-See [ADR-001](adr/ADR-001-modular-monolith.md).
+Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear internal package boundaries. Phase 2 adds a common execution engine and protocol-specific mock strategies without introducing external workers or separate services.
 
 ## Package Map
 
 | Package | Responsibility |
 | --- | --- |
-| `com.insurancehub.common` | Shared API contracts, exception handling, base persistence support |
-| `com.insurancehub.config` | Spring configuration |
-| `com.insurancehub.admin.application` | Admin login support and dashboard use cases |
+| `com.insurancehub.admin.application` | Admin login support and dashboard metrics |
 | `com.insurancehub.admin.domain` | Admin user model |
 | `com.insurancehub.admin.infrastructure` | Admin persistence adapters |
 | `com.insurancehub.admin.presentation` | Login and dashboard controllers |
-| `com.insurancehub.interfacehub.application` | Master data use cases and validation orchestration |
-| `com.insurancehub.interfacehub.domain` | Interface, partner, system, protocol, direction, and status model |
-| `com.insurancehub.interfacehub.infrastructure` | JPA repositories for master data |
-| `com.insurancehub.interfacehub.presentation` | Thymeleaf CRUD controllers and form models |
-| `com.insurancehub.protocol.rest` | Future REST adapter |
-| `com.insurancehub.protocol.soap` | Future SOAP adapter |
-| `com.insurancehub.protocol.mq` | Future MQ/JMS adapter |
-| `com.insurancehub.protocol.batch` | Future batch adapter |
-| `com.insurancehub.protocol.sftp` | Future SFTP adapter |
-| `com.insurancehub.protocol.ftp` | Future FTP adapter |
-| `com.insurancehub.monitoring` | Future dashboard metrics and health views |
-| `com.insurancehub.audit` | Future audit logging behavior |
+| `com.insurancehub.interfacehub.application` | Master data use cases |
+| `com.insurancehub.interfacehub.application.execution` | Common execution engine, executor contract, factory, result models |
+| `com.insurancehub.interfacehub.domain` | Interface, execution, retry, protocol, direction, and status enums |
+| `com.insurancehub.interfacehub.domain.entity` | JPA entities |
+| `com.insurancehub.interfacehub.infrastructure` | JPA repositories |
+| `com.insurancehub.interfacehub.presentation` | Thymeleaf CRUD and execution controllers |
+| `com.insurancehub.protocol.*` | Protocol-specific mock executors |
 
-## Runtime View
+## Execution Flow
 
 ```mermaid
-flowchart LR
-    User["Admin user"] --> Admin["Thymeleaf admin"]
-    Admin --> Core["Interface hub core"]
-    Api["Smoke/API controllers"] --> Core
-    Core --> Database["Local MySQL"]
-    Flyway["Flyway migrations"] --> Database
-    Core --> Rest["REST adapter"]
-    Core --> Soap["SOAP adapter"]
-    Core --> Mq["MQ adapter"]
-    Core --> Batch["Batch adapter"]
-    Core --> File["SFTP/FTP adapters"]
-    Core --> Audit["Audit log"]
-    Core --> Monitoring["Monitoring"]
+flowchart TD
+    Admin["Admin user"] --> Detail["Interface detail page"]
+    Detail --> Execute["Manual execute"]
+    Execute --> Engine["InterfaceExecutionService"]
+    Engine --> Record["Create InterfaceExecution"]
+    Engine --> Factory["InterfaceExecutorFactory"]
+    Factory --> Mock["Protocol mock executor"]
+    Mock --> Steps["Execution step logs"]
+    Engine --> Result{"Success?"}
+    Result -->|Yes| Success["Mark execution SUCCESS"]
+    Result -->|No| Failure["Mark execution FAILED"]
+    Failure --> Retry["Create WAITING retry task"]
 ```
 
-## Dependency Direction
+## Retry Flow
 
-- Admin and protocol modules should depend on the core interface hub model.
-- Protocol modules should not depend on each other.
-- Common utilities may be used by all modules.
-- Audit and monitoring should observe domain events or service calls without owning protocol logic.
-
-## Data Ownership
-
-Flyway owns schema changes. JPA entities added in later phases should map to Flyway-created tables instead of generating schema with Hibernate.
+```mermaid
+flowchart TD
+    Failed["Failed execution detail"] --> RetryClick["Retry action"]
+    RetryClick --> Validate["Validate failed status and active interface"]
+    Validate --> NewExecution["Create new RETRY execution"]
+    NewExecution --> MarkTask["Mark original retry task DONE"]
+    NewExecution --> Detail["Retry execution detail"]
+```
 
 ## Security Posture
 
-Phase 1 uses Spring Security form login backed by the `admin_user` table. Passwords are stored as BCrypt hashes. The seeded `admin` account is only for local demos.
+Spring Security form login is backed by the `admin_user` table. Passwords are stored as BCrypt hashes. `/admin/**` requires authentication. The seeded `admin` account is only for local demos.
+
+## Database Ownership
+
+Flyway owns schema evolution. Phase 2 adds V3 for execution number, protocol snapshot, payload storage, retry-source linkage, and retry timestamp support.

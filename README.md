@@ -2,34 +2,39 @@
 
 Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
 
-Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 1 turns the Phase 0 skeleton into a usable admin operations console with form login and master data CRUD.
+Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 2 adds a protocol-agnostic execution engine, mock protocol executors, execution history, failure handling, and retry.
 
 ## Current Phase
 
-Phase 1 - Admin authentication and interface master management CRUD
+Phase 2 - Common execution engine, execution history, failure handling, and retry
 
-Implemented in this phase:
+Implemented:
 
 - DB-backed Spring Security form login
-- Logout
-- Seeded local demo admin account
 - Partner company CRUD
 - Internal system CRUD
 - Interface definition CRUD
-- Interface enable/disable
-- Interface filtering by keyword, protocol, and status
-- Thymeleaf admin pages with shared navigation and flash messages
+- Manual execution from interface detail
+- Protocol-specific mock executors for REST, SOAP, MQ, BATCH, SFTP, and FTP
+- Execution history list and detail page
+- Execution step logs
+- Failure status and retry task creation
+- Retry action for failed executions
+- Dashboard metrics for today success, today failure, and pending retries
 
 Still intentionally out of scope:
 
-- Real REST/SOAP/MQ/SFTP/FTP/Batch execution
-- Protocol-specific endpoint setup screens
-- Production-grade authorization rules
-- External credential storage
+- Real HTTP calls
+- SOAP clients or XML mapping
+- Artemis/JMS producer or consumer flows
+- SFTP/FTP sessions or file upload/download
+- Spring Batch scheduling
+
+## Mock Execution Rule
+
+Phase 2 is mock-driven. If the interface code or request payload contains `FAIL`, execution fails. Otherwise, execution succeeds.
 
 ## Supported Protocol Classification
-
-Interface definitions can be classified as:
 
 - REST
 - SOAP
@@ -48,26 +53,20 @@ Interface definitions can be classified as:
 - Spring Data JPA
 - Flyway
 - Local MySQL
-- Spring Batch, Spring Web Services, Spring Integration FTP/SFTP, and Artemis JMS dependencies reserved for later phases
 
 ## Local Run Guide
-
-Prerequisites:
-
-- JDK 21
-- Local MySQL 8.x
-- Windows PowerShell or IntelliJ IDEA terminal
 
 Create a local database and user:
 
 ```sql
-create database insurance_hub character set utf8mb4 collate utf8mb4_0900_ai_ci;
-create user 'insurance_hub_app'@'localhost' identified by 'change-me';
+create database if not exists insurance_hub character set utf8mb4 collate utf8mb4_0900_ai_ci;
+create user if not exists 'insurance_hub_app'@'localhost' identified by 'change-me';
+alter user 'insurance_hub_app'@'localhost' identified by 'change-me';
 grant all privileges on insurance_hub.* to 'insurance_hub_app'@'localhost';
 flush privileges;
 ```
 
-Set environment variables before running:
+Set environment variables:
 
 ```powershell
 $env:INSURANCE_HUB_DB_URL="jdbc:mysql://localhost:3306/insurance_hub?serverTimezone=Asia/Seoul&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true"
@@ -85,10 +84,10 @@ Build and run:
 Open:
 
 - Login: http://localhost:8080/login
-- Admin dashboard: http://localhost:8080/admin
-- Interface list: http://localhost:8080/admin/interfaces
+- Dashboard: http://localhost:8080/admin
+- Interfaces: http://localhost:8080/admin/interfaces
+- Executions: http://localhost:8080/admin/executions
 - Smoke API: http://localhost:8080/api/smoke
-- Actuator health: http://localhost:8080/actuator/health
 
 ## Local Demo Login
 
@@ -97,7 +96,7 @@ Flyway seeds a local demo admin user:
 - Login ID: `admin`
 - Password: `admin123!`
 
-This is for local portfolio demos only. Change or remove the seed before using the project outside a local demo environment.
+The database stores a BCrypt hash, not the plain password.
 
 ## Document Index
 
@@ -121,7 +120,7 @@ This is for local portfolio demos only. Change or remove the seed before using t
 
 - Phase 0: foundation, documentation baseline, local bootable skeleton
 - Phase 1: admin authentication and master CRUD
-- Phase 2: common execution engine
+- Phase 2: common execution engine, history, failure handling, retry
 - Phase 3: REST
 - Phase 4: SOAP
 - Phase 5: MQ

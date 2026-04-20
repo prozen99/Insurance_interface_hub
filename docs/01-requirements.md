@@ -1,65 +1,54 @@
 # Requirements
 
-## Functional Scope
+## Phase 2 Functional Requirements
 
-Insurance Interface Hub is expected to grow into a central operations hub for:
+Operators can:
 
-- Interface registration
-- Protocol-specific configuration
-- Manual execution
-- Scheduled batch execution
-- Execution history
-- File transfer history
-- Failure retry
-- Monitoring dashboard
-- Audit logs
+- Log in to the admin console.
+- Manage partner companies, internal systems, and interface definitions.
+- Manually execute an active interface definition.
+- Enter an optional request payload.
+- View execution history.
+- View execution detail with step logs.
+- See execution status: PENDING, RUNNING, SUCCESS, FAILED.
+- Retry failed executions.
+- View dashboard metrics for today success, today failure, and pending retries.
 
-## Phase 1 Functional Requirements
+## Execution Rules
 
-Phase 1 makes the admin console usable for master data management.
-
-Admin authentication:
-
-- Admin users can log in from `/login`.
-- Spring Security handles form login and logout.
-- Unauthenticated users are redirected to login before accessing `/admin/**`.
-- Passwords are stored as BCrypt hashes.
-- A local demo admin account is seeded by Flyway.
-
-Master data CRUD:
-
-- Operators can create and edit partner companies.
-- Operators can create and edit internal systems.
-- Operators can create, edit, view, activate, and deactivate interface definitions.
-- Interface definitions can be classified by protocol type: REST, SOAP, MQ, BATCH, SFTP, FTP.
-- Interface definitions can be classified by direction: OUTBOUND, INBOUND, BIDIRECTIONAL.
-- Interface list supports keyword, protocol, and status filtering.
+- Phase 2 does not call real external systems.
+- Execution is routed through a common execution engine.
+- Protocol-specific mock executors exist for REST, SOAP, MQ, BATCH, SFTP, and FTP.
+- If the interface code or request payload contains `FAIL`, the mock executor returns failure.
+- Failed executions create a WAITING retry task.
+- Retrying a failed execution creates a new execution with trigger type RETRY.
+- Retrying a non-failed execution is rejected.
+- Inactive interfaces cannot be executed.
 
 ## Validation Requirements
 
-- Codes and names are required.
-- Codes are unique.
-- Codes allow letters, numbers, underscore, and hyphen.
-- Status, protocol type, direction, partner company, and internal system are validated server-side.
-- Validation errors are rendered on Thymeleaf forms.
+- Manual request payload is optional.
+- Manual request payload is limited to 4000 characters in the admin form.
+- Interface IDs and execution IDs must exist.
+- Enum filters reject invalid values through Spring MVC binding.
 
-## Phase 1 Non-Functional Requirements
+## Non-Functional Requirements
 
 - Java 21.
 - Spring Boot 3.x.
 - Gradle build.
-- Windows-compatible local run commands.
 - Local MySQL only.
-- Flyway owns schema changes.
+- Flyway migration history is append-only.
+- Thymeleaf admin UI.
+- Windows-compatible commands.
 - No real secrets in repository files.
-- Clear layered organization inside the modular monolith.
 
-## Out Of Scope For Phase 1
+## Out Of Scope For Phase 2
 
-- Real protocol execution.
+- Real REST calls.
 - SOAP XML mapping.
-- MQ producer or consumer flows.
-- SFTP/FTP network transfer.
-- Spring Batch job implementation.
-- Production-grade role management.
-- External secret vault integration.
+- MQ producer or consumer logic.
+- SFTP/FTP transfer logic.
+- Batch scheduling or job execution.
+- Distributed execution workers.
+- Production alerting.

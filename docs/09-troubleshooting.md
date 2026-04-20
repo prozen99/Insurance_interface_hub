@@ -19,7 +19,7 @@ show databases;
 select user, host from mysql.user;
 ```
 
-Confirm these environment variables match your local setup:
+Confirm environment variables:
 
 ```powershell
 $env:INSURANCE_HUB_DB_URL
@@ -27,34 +27,23 @@ $env:INSURANCE_HUB_DB_USERNAME
 $env:INSURANCE_HUB_DB_PASSWORD
 ```
 
-## Access Denied For `insurance_hub_app`
-
-Create or reset the local app user:
-
-```sql
-create user 'insurance_hub_app'@'localhost' identified by 'change-me';
-grant all privileges on insurance_hub.* to 'insurance_hub_app'@'localhost';
-flush privileges;
-```
-
-If the user already exists:
-
-```sql
-alter user 'insurance_hub_app'@'localhost' identified by 'change-me';
-```
-
-Then update `INSURANCE_HUB_DB_PASSWORD`.
-
 ## Flyway Migration Fails
 
 Common causes:
 
-- The database user does not have DDL privileges.
-- A table was created manually before Flyway ran.
-- The schema was partially created during a failed run.
-- V2 was edited after being applied locally.
+- Database user lacks DDL privileges.
+- Schema was manually changed.
+- A migration was edited after being applied.
+- A previous local run partially applied a migration.
 
-For a disposable local database, drop and recreate the schema, then run the app again.
+For disposable local data:
+
+```sql
+drop database insurance_hub;
+create database insurance_hub character set utf8mb4 collate utf8mb4_0900_ai_ci;
+```
+
+Then restart the app.
 
 ## Login Fails
 
@@ -63,21 +52,31 @@ Use the local demo account:
 - Login ID: `admin`
 - Password: `admin123!`
 
-If the account is missing, confirm `V2__phase_1_admin_master_crud.sql` ran successfully.
+If missing, confirm V2 ran.
+
+## Manual Execution Is Rejected
+
+Check:
+
+- The interface exists.
+- The interface status is ACTIVE.
+- The request payload is 4000 characters or less.
+
+## Mock Execution Fails
+
+This is expected when the interface code or request payload contains `FAIL`.
+
+## Retry Button Is Missing
+
+Only FAILED executions can be retried. SUCCESS, RUNNING, and PENDING executions do not show the retry action.
 
 ## POST Form Returns 403
 
-Spring Security CSRF protection is enabled. Thymeleaf forms must include the CSRF hidden field. The current admin forms already include it.
+Spring Security CSRF protection is enabled. Thymeleaf forms must include the CSRF hidden field.
 
 ## Port 8080 Is Already In Use
-
-Run with another port:
 
 ```powershell
 $env:INSURANCE_HUB_PORT="8081"
 .\gradlew.bat bootRun --args='--spring.profiles.active=local'
 ```
-
-## Build Passes But BootRun Fails
-
-The build tests do not require MySQL. `bootRun` with the local profile requires MySQL configuration because the application uses local MySQL and Flyway.

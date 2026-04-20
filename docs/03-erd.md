@@ -1,6 +1,6 @@
 # ERD
 
-Phase 1 uses the Phase 0 baseline tables and adds a V2 migration for admin login and master CRUD fields.
+Phase 2 extends the Phase 0 execution tables through `V3__phase_2_execution_engine.sql`.
 
 ## Logical ERD
 
@@ -11,39 +11,8 @@ erDiagram
     INTERNAL_SYSTEM ||--o{ INTERFACE_DEFINITION : connects
     INTERFACE_DEFINITION ||--o{ INTERFACE_EXECUTION : runs
     INTERFACE_EXECUTION ||--o{ INTERFACE_EXECUTION_STEP : contains
-    INTERFACE_EXECUTION ||--o{ INTERFACE_RETRY_TASK : schedules
-    INTERFACE_DEFINITION ||--o{ INTERFACE_RETRY_TASK : retries
-    INTERFACE_DEFINITION ||--o| REST_ENDPOINT_CONFIG : configures
-    INTERFACE_DEFINITION ||--o| SOAP_ENDPOINT_CONFIG : configures
-    INTERFACE_DEFINITION ||--o| MQ_CHANNEL_CONFIG : configures
-    INTERFACE_DEFINITION ||--o| FILE_TRANSFER_CONFIG : configures
-    INTERFACE_DEFINITION ||--o| BATCH_JOB_CONFIG : configures
-
-    ADMIN_USER {
-        bigint id PK
-        varchar login_id UK
-        varchar password_hash
-        varchar display_name
-        varchar role_code
-        varchar status
-    }
-
-    PARTNER_COMPANY {
-        bigint id PK
-        varchar partner_code UK
-        varchar partner_name
-        varchar status
-        varchar description
-    }
-
-    INTERNAL_SYSTEM {
-        bigint id PK
-        varchar system_code UK
-        varchar system_name
-        varchar owner_department
-        varchar status
-        varchar description
-    }
+    INTERFACE_EXECUTION ||--o{ INTERFACE_RETRY_TASK : creates
+    INTERFACE_EXECUTION ||--o{ INTERFACE_EXECUTION : retry_source
 
     INTERFACE_DEFINITION {
         bigint id PK
@@ -55,38 +24,69 @@ erDiagram
         bigint partner_company_id FK
         bigint internal_system_id FK
     }
+
+    INTERFACE_EXECUTION {
+        bigint id PK
+        varchar execution_no UK
+        varchar execution_key UK
+        bigint interface_definition_id FK
+        bigint retry_source_execution_id FK
+        varchar protocol_type
+        varchar trigger_type
+        varchar status
+        longtext request_payload
+        longtext response_payload
+        varchar error_code
+        varchar error_message
+        datetime started_at
+        datetime finished_at
+    }
+
+    INTERFACE_EXECUTION_STEP {
+        bigint id PK
+        bigint interface_execution_id FK
+        int step_order
+        varchar step_name
+        varchar status
+        varchar message
+        datetime started_at
+        datetime finished_at
+    }
+
+    INTERFACE_RETRY_TASK {
+        bigint id PK
+        bigint interface_execution_id FK
+        bigint interface_definition_id FK
+        varchar retry_status
+        int retry_count
+        datetime last_retried_at
+        datetime next_retry_at
+    }
 ```
 
-## Phase 1 Migration Notes
+## Phase 2 Migration Notes
 
-`V2__phase_1_admin_master_crud.sql` adds:
+V3 adds:
 
-- `admin_user.password_hash`
-- `admin_user.description`
-- `partner_company.status`
-- `partner_company.description`
-- `internal_system.status`
-- `internal_system.description`
-- `interface_definition.status`
-- supporting status indexes
-- local demo seed data
+- `interface_execution.execution_no`
+- `interface_execution.retry_source_execution_id`
+- `interface_execution.protocol_type`
+- `interface_execution.request_payload`
+- `interface_execution.response_payload`
+- `interface_retry_task.last_retried_at`
+- indexes for execution number, protocol, retry source, and retry task status
 
-## Master Data Rules
+## Status Enums
 
-- `partner_company.partner_code` is unique.
-- `internal_system.system_code` is unique.
-- `interface_definition.interface_code` is unique.
-- `interface_definition.status` is the Phase 1 enable/disable source of truth.
-- Legacy `active_yn` and `enabled_yn` columns remain synchronized by the JPA entity methods for now.
+Execution status:
 
-## Future Adjustments
+- PENDING
+- RUNNING
+- SUCCESS
+- FAILED
 
-Later phases may add:
+Retry status:
 
-- Credential alias tables
-- Protocol-specific create/edit screens
-- File transfer history detail
-- Payload metadata tables
-- Batch run parameter tables
-- Dashboard aggregation tables
-- Audit event persistence from services
+- WAITING
+- DONE
+- CANCELLED

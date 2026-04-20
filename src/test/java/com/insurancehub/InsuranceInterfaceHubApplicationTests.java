@@ -2,6 +2,9 @@ package com.insurancehub;
 
 import com.insurancehub.admin.infrastructure.repository.AdminUserRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceDefinitionRepository;
+import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionRepository;
+import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionStepRepository;
+import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InternalSystemRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.PartnerCompanyRepository;
 import org.junit.jupiter.api.Test;
@@ -21,6 +24,15 @@ class InsuranceInterfaceHubApplicationTests {
 
     @MockitoBean
     private InterfaceDefinitionRepository interfaceDefinitionRepository;
+
+    @MockitoBean
+    private InterfaceExecutionRepository interfaceExecutionRepository;
+
+    @MockitoBean
+    private InterfaceExecutionStepRepository interfaceExecutionStepRepository;
+
+    @MockitoBean
+    private InterfaceRetryTaskRepository interfaceRetryTaskRepository;
 
     @MockitoBean
     private PartnerCompanyRepository partnerCompanyRepository;

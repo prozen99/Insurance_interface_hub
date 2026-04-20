@@ -3,75 +3,74 @@
 ## Scenario 1 - Project Orientation
 
 1. Open `README.md`.
-2. Explain the business goal: central operations hub for insurance and financial interfaces.
+2. Explain the business goal.
 3. Show the phase roadmap.
-4. Open the package tree under `com.insurancehub`.
+4. Show `com.insurancehub.interfacehub.application.execution`.
 
 What this proves:
 
-- The project has a clear business context.
-- The package layout is ready for multiple protocols.
-- Phase 1 uses layered packages inside the modular monolith.
+- The project has clear business context.
+- Phase 2 added a common execution engine without real protocol calls.
 
-## Scenario 2 - Local Boot And Login
+## Scenario 2 - Login And Dashboard
 
-1. Start local MySQL.
-2. Set environment variables.
-3. Run `.\gradlew.bat bootRun --args='--spring.profiles.active=local'`.
-4. Open `/login`.
-5. Log in with `admin` / `admin123!`.
+1. Start the app with the local profile.
+2. Open `/login`.
+3. Log in with `admin` / `admin123!`.
+4. Open `/admin`.
 
 What this proves:
 
-- Flyway runs V1 and V2 migrations.
-- The admin user is DB-backed.
-- Spring Security form login is working.
+- DB-backed form login still works.
+- Dashboard shows execution metrics.
 
-## Scenario 3 - Partner And System CRUD
-
-1. Open `/admin/partners`.
-2. Create a partner company.
-3. Edit the partner name or status.
-4. Open `/admin/systems`.
-5. Create and edit an internal system.
-
-What this proves:
-
-- Master data CRUD is available.
-- Server-side validation and uniqueness checks work.
-
-## Scenario 4 - Interface Definition CRUD
+## Scenario 3 - Manual Success
 
 1. Open `/admin/interfaces`.
-2. Create an interface definition using REST or SOAP.
-3. Open the detail page.
-4. Disable and re-enable the interface.
-5. Filter the list by protocol and status.
+2. Open an active interface detail page.
+3. Enter a normal request payload.
+4. Click Execute now.
+5. Review the execution detail.
 
 What this proves:
 
-- Core interface registration is usable.
-- Protocol classification exists before real execution logic.
-- Enable/disable is handled through interface status.
+- Manual execution creates an execution record.
+- Step logs are persisted.
+- Mock protocol strategy resolves by protocol type.
 
-## Scenario 5 - Smoke API
+## Scenario 4 - Manual Failure
 
-1. Open `/api/smoke`.
-2. Confirm the `ApiResponse` wrapper.
-3. Mention that future JSON APIs should use the same response shape.
-
-What this proves:
-
-- JSON endpoint conventions remain available alongside Thymeleaf.
-
-## Scenario 6 - Schema Walkthrough
-
-1. Open `V1__phase_0_baseline.sql`.
-2. Open `V2__phase_1_admin_master_crud.sql`.
-3. Show `interface_definition` as the center.
-4. Show master tables, status fields, and seeded demo data.
+1. Open the same interface detail page.
+2. Enter a payload containing `FAIL`.
+3. Click Execute now.
+4. Confirm FAILED status and error details.
 
 What this proves:
 
-- The schema evolves through Flyway.
-- Phase 1 did not rewrite old migrations.
+- Failure handling is deterministic.
+- Retry task creation works.
+
+## Scenario 5 - Retry
+
+1. Open the failed execution detail.
+2. Click Retry.
+3. Review the new retry execution.
+4. Return to the original failed execution and review retry task status.
+
+What this proves:
+
+- Retry creates a new execution.
+- Retry source linkage is understandable.
+- Retry task moves from WAITING to DONE.
+
+## Scenario 6 - Execution History
+
+1. Open `/admin/executions`.
+2. Filter by FAILED.
+3. Filter by protocol.
+4. Open an execution detail.
+
+What this proves:
+
+- Operators can navigate execution history.
+- Status badges and filters are available.
