@@ -5,13 +5,14 @@
     <div class="brand">
         <span class="brand-mark">IIH</span>
         <div>
-            <p class="eyebrow">Phase 1</p>
+            <p class="eyebrow">Phase 2</p>
             <h1>Insurance Interface Hub</h1>
         </div>
     </div>
     <nav class="navigation" aria-label="Admin navigation">
         <a th:classappend="${activeNav == 'dashboard'} ? ' active'" th:href="@{/admin}">Dashboard</a>
         <a th:classappend="${activeNav == 'interfaces'} ? ' active'" th:href="@{/admin/interfaces}">Interfaces</a>
+        <a th:classappend="${activeNav == 'executions'} ? ' active'" th:href="@{/admin/executions}">Executions</a>
         <a th:classappend="${activeNav == 'partners'} ? ' active'" th:href="@{/admin/partners}">Partners</a>
         <a th:classappend="${activeNav == 'systems'} ? ' active'" th:href="@{/admin/systems}">Internal Systems</a>
     </nav>

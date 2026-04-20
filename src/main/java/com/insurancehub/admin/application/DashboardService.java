@@ -2,6 +2,8 @@ package com.insurancehub.admin.application;
 
 import java.util.List;
 
+import com.insurancehub.interfacehub.application.execution.InterfaceExecutionService;
+import com.insurancehub.interfacehub.domain.ExecutionStatus;
 import com.insurancehub.interfacehub.domain.InterfaceStatus;
 import com.insurancehub.interfacehub.domain.MasterStatus;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceDefinitionRepository;
@@ -16,15 +18,18 @@ public class DashboardService {
     private final InterfaceDefinitionRepository interfaceDefinitionRepository;
     private final PartnerCompanyRepository partnerCompanyRepository;
     private final InternalSystemRepository internalSystemRepository;
+    private final InterfaceExecutionService interfaceExecutionService;
 
     public DashboardService(
             InterfaceDefinitionRepository interfaceDefinitionRepository,
             PartnerCompanyRepository partnerCompanyRepository,
-            InternalSystemRepository internalSystemRepository
+            InternalSystemRepository internalSystemRepository,
+            InterfaceExecutionService interfaceExecutionService
     ) {
         this.interfaceDefinitionRepository = interfaceDefinitionRepository;
         this.partnerCompanyRepository = partnerCompanyRepository;
         this.internalSystemRepository = internalSystemRepository;
+        this.interfaceExecutionService = interfaceExecutionService;
     }
 
     @Transactional(readOnly = true)
@@ -32,6 +37,9 @@ public class DashboardService {
         return List.of(
                 new DashboardMetric("Total interfaces", String.valueOf(interfaceDefinitionRepository.count())),
                 new DashboardMetric("Active interfaces", String.valueOf(interfaceDefinitionRepository.countByStatus(InterfaceStatus.ACTIVE))),
+                new DashboardMetric("Today success", String.valueOf(interfaceExecutionService.countToday(ExecutionStatus.SUCCESS))),
+                new DashboardMetric("Today failure", String.valueOf(interfaceExecutionService.countToday(ExecutionStatus.FAILED))),
+                new DashboardMetric("Pending retries", String.valueOf(interfaceExecutionService.countPendingRetries())),
                 new DashboardMetric("Partner companies", String.valueOf(partnerCompanyRepository.countByStatus(MasterStatus.ACTIVE))),
                 new DashboardMetric("Internal systems", String.valueOf(internalSystemRepository.countByStatus(MasterStatus.ACTIVE)))
         );

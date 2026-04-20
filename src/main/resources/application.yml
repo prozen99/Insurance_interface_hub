@@ -35,8 +35,8 @@ management:
 info:
   app:
     name: Insurance Interface Hub
-    phase: Phase 1
-    description: Admin authentication and interface master management console.
+    phase: Phase 2
+    description: Common execution engine, history, failure handling, and retry.
 
 logging:
   level:
