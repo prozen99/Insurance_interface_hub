@@ -1,0 +1,18 @@
+# Copy this file to application-local.yml only if you want to customize the checked-in local defaults.
+# Prefer environment variables for credentials.
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/insurance_hub?serverTimezone=Asia/Seoul&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true
+    username: insurance_hub_app
+    password: change-me
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    validate-on-migrate: true
+
+server:
+  port: 8080

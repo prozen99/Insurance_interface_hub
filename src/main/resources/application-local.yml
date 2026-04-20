@@ -1,0 +1,44 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    url: ${INSURANCE_HUB_DB_URL:jdbc:mysql://localhost:3306/insurance_hub?serverTimezone=Asia/Seoul&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${INSURANCE_HUB_DB_USERNAME:insurance_hub_app}
+    password: ${INSURANCE_HUB_DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      pool-name: insurance-hub-local
+      maximum-pool-size: 5
+      minimum-idle: 1
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+    validate-on-migrate: true
+
+  jpa:
+    show-sql: false
+
+  sql:
+    init:
+      mode: never
+
+server:
+  port: ${INSURANCE_HUB_PORT:8080}
+
+logging:
+  level:
+    com.insurancehub: DEBUG
+    org.flywaydb: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  health:
+    jms:
+      enabled: false

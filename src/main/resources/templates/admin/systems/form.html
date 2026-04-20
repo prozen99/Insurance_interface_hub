@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${formTitle} + ' | Insurance Interface Hub'">System form</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <header class="page-header">
+            <p class="eyebrow">Internal system</p>
+            <h2 th:text="${formTitle}">Create internal system</h2>
+            <p class="lead">Register systems that own, receive, or provide interface data.</p>
+        </header>
+
+        <section class="panel">
+            <form class="form-grid" th:action="${formAction}" th:object="${form}" method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <label>
+                    System code
+                    <input type="text" th:field="*{systemCode}" placeholder="POLICY_CORE">
+                    <span class="field-error" th:if="${#fields.hasErrors('systemCode')}" th:errors="*{systemCode}">Required</span>
+                </label>
+                <label>
+                    System name
+                    <input type="text" th:field="*{systemName}" placeholder="Policy Core System">
+                    <span class="field-error" th:if="${#fields.hasErrors('systemName')}" th:errors="*{systemName}">Required</span>
+                </label>
+                <label>
+                    Owner department
+                    <input type="text" th:field="*{ownerDepartment}" placeholder="Insurance Platform Team">
+                    <span class="field-error" th:if="${#fields.hasErrors('ownerDepartment')}" th:errors="*{ownerDepartment}">Too long</span>
+                </label>
+                <label>
+                    Status
+                    <select th:field="*{status}">
+                        <option th:each="status : ${statusOptions}" th:value="${status}" th:text="${status}">ACTIVE</option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('status')}" th:errors="*{status}">Required</span>
+                </label>
+                <label>
+                    Description
+                    <textarea th:field="*{description}" placeholder="Operational notes for this system"></textarea>
+                    <span class="field-error" th:if="${#fields.hasErrors('description')}" th:errors="*{description}">Too long</span>
+                </label>
+                <div class="form-actions">
+                    <button class="button primary" type="submit">Save</button>
+                    <a class="button" th:href="@{/admin/systems}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

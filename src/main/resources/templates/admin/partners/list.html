@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Partners | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Master data</p>
+            <h2>Partner companies</h2>
+            <p class="lead">Manage external insurance, financial, and vendor companies connected through interfaces.</p>
+        </header>
+
+        <div class="toolbar">
+            <p class="help-text" th:text="${#lists.size(partners)} + ' partner companies'">0 partner companies</p>
+            <a class="button primary" th:href="@{/admin/partners/new}">Create partner</a>
+        </div>
+
+        <section class="panel">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>Description</th>
+                    <th>Updated</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="partner : ${partners}">
+                    <td th:text="${partner.partnerCode}">LIFEPLUS</td>
+                    <td th:text="${partner.partnerName}">Life Plus Insurance</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${partner.status.name() == 'ACTIVE'} ? ' status-active' : ' status-inactive'"
+                              th:text="${partner.status}">ACTIVE</span>
+                    </td>
+                    <td th:text="${#strings.isEmpty(partner.description) ? '-' : partner.description}">-</td>
+                    <td th:text="${#temporals.format(partner.updatedAt, 'yyyy-MM-dd HH:mm')}">2026-04-21</td>
+                    <td><a th:href="@{/admin/partners/{id}/edit(id=${partner.id})}">Edit</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(partners)}">
+                    <td colspan="6" class="empty-state">No partner companies registered yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

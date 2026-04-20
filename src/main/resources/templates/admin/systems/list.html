@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Internal Systems | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Master data</p>
+            <h2>Internal systems</h2>
+            <p class="lead">Manage source and target systems owned inside the insurance company.</p>
+        </header>
+
+        <div class="toolbar">
+            <p class="help-text" th:text="${#lists.size(systems)} + ' internal systems'">0 internal systems</p>
+            <a class="button primary" th:href="@{/admin/systems/new}">Create system</a>
+        </div>
+
+        <section class="panel">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Owner Department</th>
+                    <th>Status</th>
+                    <th>Updated</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="system : ${systems}">
+                    <td th:text="${system.systemCode}">POLICY_CORE</td>
+                    <td th:text="${system.systemName}">Policy Core System</td>
+                    <td th:text="${#strings.isEmpty(system.ownerDepartment) ? '-' : system.ownerDepartment}">Insurance Platform Team</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${system.status.name() == 'ACTIVE'} ? ' status-active' : ' status-inactive'"
+                              th:text="${system.status}">ACTIVE</span>
+                    </td>
+                    <td th:text="${#temporals.format(system.updatedAt, 'yyyy-MM-dd HH:mm')}">2026-04-21</td>
+                    <td><a th:href="@{/admin/systems/{id}/edit(id=${system.id})}">Edit</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(systems)}">
+                    <td colspan="6" class="empty-state">No internal systems registered yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

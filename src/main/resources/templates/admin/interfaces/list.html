@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Interfaces | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Master data</p>
+            <h2>Interface definitions</h2>
+            <p class="lead">Register and classify interfaces by protocol before execution logic is introduced in later phases.</p>
+        </header>
+
+        <form class="filter-form" method="get" th:action="@{/admin/interfaces}">
+            <label>
+                Search
+                <input type="text" name="keyword" th:value="${keyword}" placeholder="Code or name">
+            </label>
+            <label>
+                Protocol
+                <select name="protocolType">
+                    <option value="">All protocols</option>
+                    <option th:each="protocol : ${protocolOptions}"
+                            th:value="${protocol}"
+                            th:text="${protocol}"
+                            th:selected="${protocol == selectedProtocolType}">REST</option>
+                </select>
+            </label>
+            <label>
+                Status
+                <select name="status">
+                    <option value="">All statuses</option>
+                    <option th:each="status : ${statusOptions}"
+                            th:value="${status}"
+                            th:text="${status}"
+                            th:selected="${status == selectedStatus}">ACTIVE</option>
+                </select>
+            </label>
+            <button class="button" type="submit">Filter</button>
+        </form>
+
+        <div class="toolbar">
+            <p class="help-text" th:text="${#lists.size(interfaces)} + ' interface definitions'">0 interface definitions</p>
+            <div class="toolbar-actions">
+                <a class="button" th:href="@{/admin/interfaces}">Reset</a>
+                <a class="button primary" th:href="@{/admin/interfaces/new}">Create interface</a>
+            </div>
+        </div>
+
+        <section class="panel">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Name</th>
+                    <th>Protocol</th>
+                    <th>Direction</th>
+                    <th>Status</th>
+                    <th>Partner</th>
+                    <th>System</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="item : ${interfaces}">
+                    <td><a th:href="@{/admin/interfaces/{id}(id=${item.id})}" th:text="${item.interfaceCode}">IF_REST_POLICY_001</a></td>
+                    <td th:text="${item.interfaceName}">Policy status outbound REST interface</td>
+                    <td th:text="${item.protocolType}">REST</td>
+                    <td th:text="${item.direction}">OUTBOUND</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${item.status.name() == 'ACTIVE'} ? ' status-active' : ' status-inactive'"
+                              th:text="${item.status}">ACTIVE</span>
+                    </td>
+                    <td th:text="${item.partnerCompany != null ? item.partnerCompany.partnerName : '-'}">Life Plus Insurance</td>
+                    <td th:text="${item.internalSystem != null ? item.internalSystem.systemName : '-'}">Policy Core System</td>
+                    <td><a th:href="@{/admin/interfaces/{id}/edit(id=${item.id})}">Edit</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(interfaces)}">
+                    <td colspan="8" class="empty-state">No interface definitions match the current filter.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

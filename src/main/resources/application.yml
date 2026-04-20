@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: insurance-interface-hub
+  profiles:
+    default: local
+  thymeleaf:
+    cache: false
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Insurance Interface Hub
+    phase: Phase 1
+    description: Admin authentication and interface master management console.
+
+logging:
+  level:
+    root: INFO
+    com.insurancehub: DEBUG
+    org.hibernate.SQL: INFO
+    org.springframework.security: INFO

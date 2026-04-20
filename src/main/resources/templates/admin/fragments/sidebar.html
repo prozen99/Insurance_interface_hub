@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<aside class="sidebar" th:fragment="sidebar(activeNav)">
+    <div class="brand">
+        <span class="brand-mark">IIH</span>
+        <div>
+            <p class="eyebrow">Phase 1</p>
+            <h1>Insurance Interface Hub</h1>
+        </div>
+    </div>
+    <nav class="navigation" aria-label="Admin navigation">
+        <a th:classappend="${activeNav == 'dashboard'} ? ' active'" th:href="@{/admin}">Dashboard</a>
+        <a th:classappend="${activeNav == 'interfaces'} ? ' active'" th:href="@{/admin/interfaces}">Interfaces</a>
+        <a th:classappend="${activeNav == 'partners'} ? ' active'" th:href="@{/admin/partners}">Partners</a>
+        <a th:classappend="${activeNav == 'systems'} ? ' active'" th:href="@{/admin/systems}">Internal Systems</a>
+    </nav>
+    <form class="logout-form" th:action="@{/logout}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <button type="submit">Logout</button>
+    </form>
+</aside>
+</body>
+</html>

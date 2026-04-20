@@ -1,0 +1,157 @@
+package com.insurancehub.interfacehub.presentation;
+
+import com.insurancehub.interfacehub.application.DuplicateCodeException;
+import com.insurancehub.interfacehub.application.InterfaceDefinitionService;
+import com.insurancehub.interfacehub.application.InternalSystemService;
+import com.insurancehub.interfacehub.application.PartnerCompanyService;
+import com.insurancehub.interfacehub.domain.InterfaceDirection;
+import com.insurancehub.interfacehub.domain.InterfaceStatus;
+import com.insurancehub.interfacehub.domain.ProtocolType;
+import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
+import com.insurancehub.interfacehub.presentation.form.InterfaceDefinitionForm;
+import jakarta.validation.Valid;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+@Controller
+@RequestMapping("/admin/interfaces")
+public class InterfaceDefinitionController {
+
+    private final InterfaceDefinitionService interfaceDefinitionService;
+    private final PartnerCompanyService partnerCompanyService;
+    private final InternalSystemService internalSystemService;
+
+    public InterfaceDefinitionController(
+            InterfaceDefinitionService interfaceDefinitionService,
+            PartnerCompanyService partnerCompanyService,
+            InternalSystemService internalSystemService
+    ) {
+        this.interfaceDefinitionService = interfaceDefinitionService;
+        this.partnerCompanyService = partnerCompanyService;
+        this.internalSystemService = internalSystemService;
+    }
+
+    @ModelAttribute("protocolOptions")
+    public ProtocolType[] protocolOptions() {
+        return ProtocolType.values();
+    }
+
+    @ModelAttribute("directionOptions")
+    public InterfaceDirection[] directionOptions() {
+        return InterfaceDirection.values();
+    }
+
+    @ModelAttribute("statusOptions")
+    public InterfaceStatus[] statusOptions() {
+        return InterfaceStatus.values();
+    }
+
+    @GetMapping
+    public String list(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) ProtocolType protocolType,
+            @RequestParam(required = false) InterfaceStatus status,
+            Model model
+    ) {
+        model.addAttribute("activeNav", "interfaces");
+        model.addAttribute("interfaces", interfaceDefinitionService.search(keyword, protocolType, status));
+        model.addAttribute("keyword", keyword);
+        model.addAttribute("selectedProtocolType", protocolType);
+        model.addAttribute("selectedStatus", status);
+        return "admin/interfaces/list";
+    }
+
+    @GetMapping("/new")
+    public String newForm(Model model) {
+        model.addAttribute("form", InterfaceDefinitionForm.empty());
+        return interfaceForm(model, "Create interface definition", "/admin/interfaces");
+    }
+
+    @PostMapping
+    public String create(
+            @Valid @ModelAttribute("form") InterfaceDefinitionForm form,
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            return interfaceForm(model, "Create interface definition", "/admin/interfaces");
+        }
+
+        try {
+            InterfaceDefinition interfaceDefinition = interfaceDefinitionService.create(form);
+            redirectAttributes.addFlashAttribute("successMessage", "Interface created: " + interfaceDefinition.getInterfaceCode());
+            return "redirect:/admin/interfaces/" + interfaceDefinition.getId();
+        } catch (DuplicateCodeException exception) {
+            bindingResult.rejectValue("interfaceCode", "duplicate", exception.getMessage());
+            return interfaceForm(model, "Create interface definition", "/admin/interfaces");
+        }
+    }
+
+    @GetMapping("/{id}")
+    public String detail(@PathVariable Long id, Model model) {
+        model.addAttribute("activeNav", "interfaces");
+        model.addAttribute("interfaceDefinition", interfaceDefinitionService.getDetail(id));
+        return "admin/interfaces/detail";
+    }
+
+    @GetMapping("/{id}/edit")
+    public String editForm(@PathVariable Long id, Model model) {
+        InterfaceDefinition interfaceDefinition = interfaceDefinitionService.getDetail(id);
+        model.addAttribute("form", InterfaceDefinitionForm.from(interfaceDefinition));
+        return interfaceForm(model, "Edit interface definition", "/admin/interfaces/" + id);
+    }
+
+    @PostMapping("/{id}")
+    public String update(
+            @PathVariable Long id,
+            @Valid @ModelAttribute("form") InterfaceDefinitionForm form,
+            BindingResult bindingResult,
+            Model model,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (bindingResult.hasErrors()) {
+            return interfaceForm(model, "Edit interface definition", "/admin/interfaces/" + id);
+        }
+
+        try {
+            InterfaceDefinition interfaceDefinition = interfaceDefinitionService.update(id, form);
+            redirectAttributes.addFlashAttribute("successMessage", "Interface updated: " + interfaceDefinition.getInterfaceCode());
+            return "redirect:/admin/interfaces/" + id;
+        } catch (DuplicateCodeException exception) {
+            bindingResult.rejectValue("interfaceCode", "duplicate", exception.getMessage());
+            return interfaceForm(model, "Edit interface definition", "/admin/interfaces/" + id);
+        }
+    }
+
+    @PostMapping("/{id}/activate")
+    public String activate(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        interfaceDefinitionService.activate(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Interface activated.");
+        return "redirect:/admin/interfaces/" + id;
+    }
+
+    @PostMapping("/{id}/deactivate")
+    public String deactivate(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        interfaceDefinitionService.deactivate(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Interface deactivated.");
+        return "redirect:/admin/interfaces/" + id;
+    }
+
+    private String interfaceForm(Model model, String title, String action) {
+        model.addAttribute("activeNav", "interfaces");
+        model.addAttribute("formTitle", title);
+        model.addAttribute("formAction", action);
+        model.addAttribute("partnerOptions", partnerCompanyService.findActive());
+        model.addAttribute("systemOptions", internalSystemService.findActive());
+        return "admin/interfaces/form";
+    }
+}

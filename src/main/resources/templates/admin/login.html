@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body class="login-body">
+<main class="login-panel">
+    <div class="login-brand">
+        <span class="brand-mark">IIH</span>
+        <div>
+            <p class="eyebrow">Admin console</p>
+            <h1>Insurance Interface Hub</h1>
+        </div>
+    </div>
+    <p class="login-copy">Sign in to manage partner companies, internal systems, and interface definitions.</p>
+
+    <div class="flash flash-error" th:if="${param.error}">Invalid login ID or password.</div>
+    <div class="flash flash-success" th:if="${param.logout}">You have been logged out.</div>
+
+    <form class="form-grid" th:action="@{/login}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <label>
+            Login ID
+            <input type="text" name="username" autocomplete="username" autofocus>
+        </label>
+        <label>
+            Password
+            <input type="password" name="password" autocomplete="current-password">
+        </label>
+        <button class="button primary full-width" type="submit">Login</button>
+    </form>
+</main>
+</body>
+</html>
