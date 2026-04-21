@@ -20,9 +20,12 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers("/simulator/**", "/api/smoke")
+                )
                 .userDetailsService(adminUserDetailsService)
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/login", "/css/**", "/api/smoke", "/actuator/health", "/actuator/info").permitAll()
+                        .requestMatchers("/login", "/css/**", "/api/smoke", "/simulator/**", "/actuator/health", "/actuator/info").permitAll()
                         .requestMatchers("/admin/**").authenticated()
                         .anyRequest().authenticated()
                 )
