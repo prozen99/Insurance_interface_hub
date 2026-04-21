@@ -21,6 +21,7 @@ import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.interfacehub.domain.entity.InternalSystem;
 import com.insurancehub.interfacehub.domain.entity.PartnerCompany;
 import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
+import com.insurancehub.protocol.soap.application.SoapEndpointConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -51,6 +52,9 @@ class InterfaceDefinitionControllerTest {
 
     @MockitoBean
     private RestEndpointConfigService restEndpointConfigService;
+
+    @MockitoBean
+    private SoapEndpointConfigService soapEndpointConfigService;
 
     @Test
     @WithMockUser(username = "admin")

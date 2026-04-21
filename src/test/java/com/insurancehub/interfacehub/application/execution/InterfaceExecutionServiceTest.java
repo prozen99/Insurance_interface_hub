@@ -28,7 +28,7 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceDefiniti
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionStepRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
-import com.insurancehub.protocol.soap.SoapMockInterfaceExecutor;
+import com.insurancehub.protocol.mq.MqMockInterfaceExecutor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +55,7 @@ class InterfaceExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(new SoapMockInterfaceExecutor()));
+        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(new MqMockInterfaceExecutor()));
         service = new InterfaceExecutionService(
                 interfaceDefinitionRepository,
                 interfaceExecutionRepository,
@@ -69,7 +69,7 @@ class InterfaceExecutionServiceTest {
 
     @Test
     void executeManualCreatesSuccessfulExecutionAndSteps() {
-        InterfaceDefinition definition = activeDefinition("IF_SOAP_POLICY_001");
+        InterfaceDefinition definition = activeDefinition("IF_MQ_POLICY_001");
         when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
 
         InterfaceExecution execution = service.executeManual(1L, "{\"policyNo\":\"P001\"}", "admin");
@@ -83,7 +83,7 @@ class InterfaceExecutionServiceTest {
 
     @Test
     void executeManualCreatesFailedExecutionAndRetryTaskWhenPayloadContainsFail() {
-        InterfaceDefinition definition = activeDefinition("IF_SOAP_POLICY_001");
+        InterfaceDefinition definition = activeDefinition("IF_MQ_POLICY_001");
         when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
 
         InterfaceExecution execution = service.executeManual(1L, "please FAIL this mock", "admin");
@@ -95,7 +95,7 @@ class InterfaceExecutionServiceTest {
 
     @Test
     void retryFailedExecutionCreatesRetryExecutionAndMarksTaskDone() {
-        InterfaceDefinition definition = activeDefinition("IF_SOAP_POLICY_001");
+        InterfaceDefinition definition = activeDefinition("IF_MQ_POLICY_001");
         InterfaceExecution original = InterfaceExecution.create(
                 "EXE-ORIGINAL",
                 definition,
@@ -125,8 +125,8 @@ class InterfaceExecutionServiceTest {
     private InterfaceDefinition activeDefinition(String code) {
         return InterfaceDefinition.create(
                 code,
-                "Policy status outbound SOAP interface",
-                ProtocolType.SOAP,
+                "Policy status outbound MQ interface",
+                ProtocolType.MQ,
                 InterfaceDirection.OUTBOUND,
                 InterfaceStatus.ACTIVE,
                 PartnerCompany.create("LIFEPLUS", "Life Plus Insurance", MasterStatus.ACTIVE, null),

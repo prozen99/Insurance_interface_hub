@@ -8,6 +8,7 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTas
 import com.insurancehub.interfacehub.infrastructure.repository.InternalSystemRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.PartnerCompanyRepository;
 import com.insurancehub.protocol.rest.infrastructure.repository.RestEndpointConfigRepository;
+import com.insurancehub.protocol.soap.infrastructure.repository.SoapEndpointConfigRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -43,6 +44,9 @@ class InsuranceInterfaceHubApplicationTests {
 
     @MockitoBean
     private RestEndpointConfigRepository restEndpointConfigRepository;
+
+    @MockitoBean
+    private SoapEndpointConfigRepository soapEndpointConfigRepository;
 
     @Test
     void contextLoads() {
