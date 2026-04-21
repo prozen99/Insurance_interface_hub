@@ -1,4 +1,4 @@
 /**
- * REST protocol adapter placeholder.
+ * REST protocol adapter, endpoint configuration, and local simulator support.
  */
 package com.insurancehub.protocol.rest;

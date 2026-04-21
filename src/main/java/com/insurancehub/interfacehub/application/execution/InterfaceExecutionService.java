@@ -167,6 +167,16 @@ public class InterfaceExecutionService {
             );
         }
 
+        execution.recordHttpExchange(
+                result.requestUrl(),
+                result.requestMethod(),
+                result.protocolAction(),
+                result.requestHeaders(),
+                result.responseStatusCode(),
+                result.responseHeaders(),
+                result.latencyMs()
+        );
+
         for (ExecutionStepLog step : result.steps()) {
             interfaceExecutionStepRepository.save(InterfaceExecutionStep.create(
                     execution,

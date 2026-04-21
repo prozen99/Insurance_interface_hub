@@ -64,8 +64,29 @@ public class InterfaceExecution extends BaseTimeEntity {
     @Column(name = "request_payload", columnDefinition = "longtext")
     private String requestPayload;
 
+    @Column(name = "request_url", length = 1000)
+    private String requestUrl;
+
+    @Column(name = "request_method", length = 20)
+    private String requestMethod;
+
+    @Column(name = "protocol_action", length = 300)
+    private String protocolAction;
+
+    @Column(name = "request_headers", columnDefinition = "longtext")
+    private String requestHeaders;
+
     @Column(name = "response_payload", columnDefinition = "longtext")
     private String responsePayload;
+
+    @Column(name = "response_status_code")
+    private Integer responseStatusCode;
+
+    @Column(name = "response_headers", columnDefinition = "longtext")
+    private String responseHeaders;
+
+    @Column(name = "latency_ms")
+    private Long latencyMs;
 
     @Column(name = "started_at")
     private LocalDateTime startedAt;
@@ -122,6 +143,35 @@ public class InterfaceExecution extends BaseTimeEntity {
     public void markRunning(LocalDateTime startedAt) {
         this.executionStatus = ExecutionStatus.RUNNING;
         this.startedAt = startedAt;
+    }
+
+    public void recordHttpExchange(
+            String requestUrl,
+            String requestMethod,
+            String requestHeaders,
+            Integer responseStatusCode,
+            String responseHeaders,
+            Long latencyMs
+    ) {
+        recordHttpExchange(requestUrl, requestMethod, null, requestHeaders, responseStatusCode, responseHeaders, latencyMs);
+    }
+
+    public void recordHttpExchange(
+            String requestUrl,
+            String requestMethod,
+            String protocolAction,
+            String requestHeaders,
+            Integer responseStatusCode,
+            String responseHeaders,
+            Long latencyMs
+    ) {
+        this.requestUrl = requestUrl;
+        this.requestMethod = requestMethod;
+        this.protocolAction = protocolAction;
+        this.requestHeaders = requestHeaders;
+        this.responseStatusCode = responseStatusCode;
+        this.responseHeaders = responseHeaders;
+        this.latencyMs = latencyMs;
     }
 
     public void markSuccess(String responsePayload, LocalDateTime finishedAt) {
