@@ -23,7 +23,7 @@ Status: Complete
 
 ## Phase 2 - Common Execution Engine, History, Failure Handling, Retry
 
-Status: Complete in the current codebase
+Status: Complete
 
 - Common `InterfaceExecutionService`.
 - `InterfaceExecutor` contract.
@@ -36,21 +36,27 @@ Status: Complete in the current codebase
 - Retry task persistence.
 - Dashboard metrics for success/failure/retry.
 
+## Phase 3 - Real REST Integration
+
+Status: Complete in the current codebase
+
+- REST endpoint configuration UI and validation.
+- Real REST executor using Spring `RestClient`.
+- Local simulator API for premium calculation, policy lookup, and claim registration.
+- REST request URL, method, request headers, response status, response headers, body, and latency capture.
+- Retry flow through the real REST executor.
+- Troubleshooting document updated with real development issues.
+
 Exit criteria:
 
 - `.\gradlew.bat build` succeeds.
-- App starts with local profile.
+- App starts with the local profile.
 - Admin login works.
-- Manual execution succeeds with normal payload.
-- Manual execution fails with payload containing `FAIL`.
-- Failed execution retry creates a new execution.
-
-## Phase 3 - REST
-
-- Add REST endpoint configuration UI and validation.
-- Implement outbound REST executor.
-- Support headers, methods, timeout, and response recording.
-- Add mock-server based tests.
+- REST config page is reachable from a REST interface detail page.
+- Manual REST execution calls the local simulator.
+- Payload containing `FAIL` returns a failed REST execution.
+- Failed REST execution can be retried.
+- Execution detail shows REST request and response metadata.
 
 ## Phase 4 - SOAP
 

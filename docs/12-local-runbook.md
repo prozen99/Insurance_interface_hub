@@ -33,6 +33,8 @@ Optional:
 $env:INSURANCE_HUB_PORT="8080"
 ```
 
+If the port is changed, update REST endpoint config base URLs in the admin UI.
+
 ## Build
 
 ```powershell
@@ -50,17 +52,39 @@ $env:INSURANCE_HUB_PORT="8080"
 - Login ID: `admin`
 - Password: `admin123!`
 
-## Verify Phase 2
+## Verify Phase 3
 
 1. Open http://localhost:8080/login.
 2. Log in.
 3. Open http://localhost:8080/admin/interfaces.
-4. Open an interface detail page.
-5. Execute with a normal payload and confirm SUCCESS.
-6. Execute with `FAIL` in the payload and confirm FAILED.
-7. Open the failed execution detail.
-8. Click Retry.
-9. Open http://localhost:8080/admin/executions.
+4. Open `IF_REST_POLICY_001`.
+5. Confirm the REST settings panel points to `http://localhost:8080/simulator/rest/premium/calculate`.
+6. Open Edit REST config and confirm method, path, timeout, headers, and sample body are editable.
+7. Return to the interface detail page.
+8. Execute with the sample JSON payload and confirm SUCCESS.
+9. Open execution detail and confirm URL, method, status code, latency, request headers, response headers, request payload, and response payload are visible.
+10. Execute again with `FAIL` in the payload and confirm FAILED.
+11. Open the failed execution detail and click Retry.
+
+## Simulator Smoke Checks
+
+GET policy success:
+
+```powershell
+Invoke-RestMethod http://localhost:8080/simulator/rest/policy/POL-001
+```
+
+POST premium failure:
+
+```powershell
+Invoke-RestMethod `
+  -Method Post `
+  -Uri http://localhost:8080/simulator/rest/premium/calculate `
+  -ContentType "application/json" `
+  -Body '{"policyNo":"FAIL"}'
+```
+
+The failure command returns HTTP 422 by design.
 
 ## Reset Local Database
 

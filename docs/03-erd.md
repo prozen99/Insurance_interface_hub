@@ -1,6 +1,6 @@
 # ERD
 
-Phase 2 extends the Phase 0 execution tables through `V3__phase_2_execution_engine.sql`.
+Phase 3 extends the execution schema through `V4__phase_3_real_rest_integration.sql`.
 
 ## Logical ERD
 
@@ -10,6 +10,7 @@ erDiagram
     PARTNER_COMPANY ||--o{ INTERFACE_DEFINITION : owns
     INTERNAL_SYSTEM ||--o{ INTERFACE_DEFINITION : connects
     INTERFACE_DEFINITION ||--o{ INTERFACE_EXECUTION : runs
+    INTERFACE_DEFINITION ||--o| REST_ENDPOINT_CONFIG : configures
     INTERFACE_EXECUTION ||--o{ INTERFACE_EXECUTION_STEP : contains
     INTERFACE_EXECUTION ||--o{ INTERFACE_RETRY_TASK : creates
     INTERFACE_EXECUTION ||--o{ INTERFACE_EXECUTION : retry_source
@@ -25,6 +26,19 @@ erDiagram
         bigint internal_system_id FK
     }
 
+    REST_ENDPOINT_CONFIG {
+        bigint id PK
+        bigint interface_definition_id FK
+        varchar http_method
+        varchar endpoint_url
+        varchar base_url
+        varchar path
+        int timeout_millis
+        longtext headers_json
+        longtext sample_request_body
+        tinyint active_yn
+    }
+
     INTERFACE_EXECUTION {
         bigint id PK
         varchar execution_no UK
@@ -35,7 +49,13 @@ erDiagram
         varchar trigger_type
         varchar status
         longtext request_payload
+        varchar request_url
+        varchar request_method
+        longtext request_headers
         longtext response_payload
+        int response_status_code
+        longtext response_headers
+        bigint latency_ms
         varchar error_code
         varchar error_message
         datetime started_at
@@ -64,17 +84,24 @@ erDiagram
     }
 ```
 
-## Phase 2 Migration Notes
+## Phase 3 Migration Notes
 
-V3 adds:
+V4 adds:
 
-- `interface_execution.execution_no`
-- `interface_execution.retry_source_execution_id`
-- `interface_execution.protocol_type`
-- `interface_execution.request_payload`
-- `interface_execution.response_payload`
-- `interface_retry_task.last_retried_at`
-- indexes for execution number, protocol, retry source, and retry task status
+- `rest_endpoint_config.base_url`
+- `rest_endpoint_config.path`
+- `rest_endpoint_config.headers_json`
+- `rest_endpoint_config.sample_request_body`
+- `rest_endpoint_config.active_yn`
+- `interface_execution.request_url`
+- `interface_execution.request_method`
+- `interface_execution.request_headers`
+- `interface_execution.response_status_code`
+- `interface_execution.response_headers`
+- `interface_execution.latency_ms`
+- sample REST config for `IF_REST_POLICY_001`
+
+The legacy `rest_endpoint_config.endpoint_url` column remains populated for compatibility with the Phase 0 baseline. The application uses `base_url + path` and synchronizes `endpoint_url`.
 
 ## Status Enums
 

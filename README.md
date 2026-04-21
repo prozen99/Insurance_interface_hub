@@ -2,46 +2,52 @@
 
 Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
 
-Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 2 adds a protocol-agnostic execution engine, mock protocol executors, execution history, failure handling, and retry.
+Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 3 adds a real REST execution path backed by a local simulator API while SOAP, MQ, BATCH, SFTP, and FTP intentionally remain mock-driven.
 
 ## Current Phase
 
-Phase 2 - Common execution engine, execution history, failure handling, and retry
+Phase 3 - Real REST integration, REST-specific configuration UI, and troubleshooting documentation update
 
 Implemented:
 
 - DB-backed Spring Security form login
-- Partner company CRUD
-- Internal system CRUD
-- Interface definition CRUD
-- Manual execution from interface detail
-- Protocol-specific mock executors for REST, SOAP, MQ, BATCH, SFTP, and FTP
-- Execution history list and detail page
-- Execution step logs
-- Failure status and retry task creation
-- Retry action for failed executions
-- Dashboard metrics for today success, today failure, and pending retries
+- Partner company, internal system, and interface definition CRUD
+- Common execution engine, execution history, step logs, retry tasks, and dashboard metrics
+- REST endpoint configuration UI per REST interface
+- Real REST executor using Spring `RestClient`
+- Local REST simulator endpoints under `/simulator/rest/**`
+- REST request URL, method, headers, response status, response headers, payload, latency, and error persistence
+- Retry flow for failed REST executions
+- Mock executors retained for SOAP, MQ, BATCH, SFTP, and FTP
 
 Still intentionally out of scope:
 
-- Real HTTP calls
-- SOAP clients or XML mapping
+- Real SOAP XML mapping and SOAP client calls
 - Artemis/JMS producer or consumer flows
 - SFTP/FTP sessions or file upload/download
-- Spring Batch scheduling
+- Spring Batch scheduling and job launching
 
-## Mock Execution Rule
+## REST Demo Flow
 
-Phase 2 is mock-driven. If the interface code or request payload contains `FAIL`, execution fails. Otherwise, execution succeeds.
+Seed data includes `IF_REST_POLICY_001` with a REST config targeting:
+
+- `POST http://localhost:8080/simulator/rest/premium/calculate`
+
+Additional simulator endpoints:
+
+- `GET /simulator/rest/policy/{policyNo}`
+- `POST /simulator/rest/claim/register`
+
+The simulator returns success for normal requests and a controlled failure when the path variable or request body contains `FAIL`.
 
 ## Supported Protocol Classification
 
-- REST
-- SOAP
-- MQ
-- BATCH
-- SFTP
-- FTP
+- REST: real local HTTP execution in Phase 3
+- SOAP: mock executor
+- MQ: mock executor
+- BATCH: mock executor
+- SFTP: mock executor
+- FTP: mock executor
 
 ## Tech Baseline
 
@@ -87,6 +93,7 @@ Open:
 - Dashboard: http://localhost:8080/admin
 - Interfaces: http://localhost:8080/admin/interfaces
 - Executions: http://localhost:8080/admin/executions
+- REST simulator smoke target: http://localhost:8080/simulator/rest/policy/POL-001
 - Smoke API: http://localhost:8080/api/smoke
 
 ## Local Demo Login
@@ -121,7 +128,7 @@ The database stores a BCrypt hash, not the plain password.
 - Phase 0: foundation, documentation baseline, local bootable skeleton
 - Phase 1: admin authentication and master CRUD
 - Phase 2: common execution engine, history, failure handling, retry
-- Phase 3: REST
+- Phase 3: real REST integration and simulator
 - Phase 4: SOAP
 - Phase 5: MQ
 - Phase 6: SFTP/FTP
