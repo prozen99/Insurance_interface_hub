@@ -12,6 +12,10 @@ import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.presentation.form.InterfaceDefinitionForm;
 import com.insurancehub.interfacehub.presentation.form.ManualExecutionForm;
+import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
+import com.insurancehub.protocol.rest.domain.entity.RestEndpointConfig;
+import com.insurancehub.protocol.soap.application.SoapEndpointConfigService;
+import com.insurancehub.protocol.soap.domain.entity.SoapEndpointConfig;
 import jakarta.validation.Valid;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -33,17 +37,23 @@ public class InterfaceDefinitionController {
     private final PartnerCompanyService partnerCompanyService;
     private final InternalSystemService internalSystemService;
     private final InterfaceExecutionService interfaceExecutionService;
+    private final RestEndpointConfigService restEndpointConfigService;
+    private final SoapEndpointConfigService soapEndpointConfigService;
 
     public InterfaceDefinitionController(
             InterfaceDefinitionService interfaceDefinitionService,
             PartnerCompanyService partnerCompanyService,
             InternalSystemService internalSystemService,
-            InterfaceExecutionService interfaceExecutionService
+            InterfaceExecutionService interfaceExecutionService,
+            RestEndpointConfigService restEndpointConfigService,
+            SoapEndpointConfigService soapEndpointConfigService
     ) {
         this.interfaceDefinitionService = interfaceDefinitionService;
         this.partnerCompanyService = partnerCompanyService;
         this.internalSystemService = internalSystemService;
         this.interfaceExecutionService = interfaceExecutionService;
+        this.restEndpointConfigService = restEndpointConfigService;
+        this.soapEndpointConfigService = soapEndpointConfigService;
     }
 
     @ModelAttribute("protocolOptions")
@@ -105,8 +115,17 @@ public class InterfaceDefinitionController {
 
     @GetMapping("/{id}")
     public String detail(@PathVariable Long id, Model model) {
-        addDetailModel(id, model);
-        model.addAttribute("manualExecutionForm", new ManualExecutionForm());
+        InterfaceDefinition interfaceDefinition = addDetailModel(id, model);
+        ManualExecutionForm manualExecutionForm = new ManualExecutionForm();
+        RestEndpointConfig restConfig = (RestEndpointConfig) model.asMap().get("restConfig");
+        if (interfaceDefinition.getProtocolType() == ProtocolType.REST && restConfig != null) {
+            manualExecutionForm.setRequestPayload(restConfig.getSampleRequestBody());
+        }
+        SoapEndpointConfig soapConfig = (SoapEndpointConfig) model.asMap().get("soapConfig");
+        if (interfaceDefinition.getProtocolType() == ProtocolType.SOAP && soapConfig != null) {
+            manualExecutionForm.setRequestPayload(soapConfig.getRequestTemplateXml());
+        }
+        model.addAttribute("manualExecutionForm", manualExecutionForm);
         return "admin/interfaces/detail";
     }
 
@@ -190,9 +209,17 @@ public class InterfaceDefinitionController {
         return "admin/interfaces/form";
     }
 
-    private void addDetailModel(Long id, Model model) {
+    private InterfaceDefinition addDetailModel(Long id, Model model) {
+        InterfaceDefinition interfaceDefinition = interfaceDefinitionService.getDetail(id);
         model.addAttribute("activeNav", "interfaces");
-        model.addAttribute("interfaceDefinition", interfaceDefinitionService.getDetail(id));
+        model.addAttribute("interfaceDefinition", interfaceDefinition);
         model.addAttribute("recentExecutions", interfaceExecutionService.recentExecutionsForInterface(id));
+        if (interfaceDefinition.getProtocolType() == ProtocolType.REST) {
+            model.addAttribute("restConfig", restEndpointConfigService.findByInterfaceDefinitionId(id).orElse(null));
+        }
+        if (interfaceDefinition.getProtocolType() == ProtocolType.SOAP) {
+            model.addAttribute("soapConfig", soapEndpointConfigService.findByInterfaceDefinitionId(id).orElse(null));
+        }
+        return interfaceDefinition;
     }
 }

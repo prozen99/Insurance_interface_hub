@@ -81,6 +81,45 @@
             </dl>
         </section>
 
+        <section class="panel spacing-bottom" th:if="${execution.requestUrl != null}">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">REST exchange</p>
+                    <h3>HTTP request and response</h3>
+                </div>
+            </div>
+            <dl class="detail-grid">
+                <div class="detail-item">
+                    <dt>Method</dt>
+                    <dd th:text="${execution.requestMethod == null ? '-' : execution.requestMethod}">POST</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Status code</dt>
+                    <dd th:text="${execution.responseStatusCode == null ? '-' : execution.responseStatusCode}">200</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Latency</dt>
+                    <dd th:text="${execution.latencyMs == null ? '-' : execution.latencyMs + ' ms'}">18 ms</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>URL</dt>
+                    <dd th:text="${execution.requestUrl}">http://localhost:8080/simulator/rest/premium/calculate</dd>
+                </div>
+                <div class="detail-item full">
+                    <dt>Request headers</dt>
+                    <dd>
+                        <pre class="payload compact" th:text="${execution.requestHeaders == null ? '{}' : execution.requestHeaders}">{}</pre>
+                    </dd>
+                </div>
+                <div class="detail-item full">
+                    <dt>Response headers</dt>
+                    <dd>
+                        <pre class="payload compact" th:text="${execution.responseHeaders == null ? '{}' : execution.responseHeaders}">{}</pre>
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
         <section class="panel spacing-bottom">
             <div class="panel-header">
                 <div>

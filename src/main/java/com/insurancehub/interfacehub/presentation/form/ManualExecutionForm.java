@@ -8,6 +8,6 @@ import lombok.Setter;
 @Setter
 public class ManualExecutionForm {
 
-    @Size(max = 4000, message = "Request payload must be 4000 characters or less.")
+    @Size(max = 12000, message = "Request payload must be 12000 characters or less.")
     private String requestPayload;
 }

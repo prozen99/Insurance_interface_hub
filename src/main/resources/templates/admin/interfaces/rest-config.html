@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'REST config | ' + ${interfaceDefinition.interfaceCode}">REST config</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">REST endpoint configuration</p>
+            <h2 th:text="${interfaceDefinition.interfaceCode}">IF_REST_POLICY_001</h2>
+            <p class="lead">Configure the local-demo REST call target, timeout, headers, and sample request body used by manual execution.</p>
+        </header>
+
+        <div class="toolbar">
+            <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Back to interface</a>
+        </div>
+
+        <section class="panel">
+            <form class="form-grid panel-body"
+                  th:action="@{/admin/interfaces/{id}/rest-config(id=${interfaceDefinition.id})}"
+                  th:object="${form}"
+                  method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" th:field="*{id}">
+
+                <label>
+                    Base URL
+                    <input type="text" th:field="*{baseUrl}" placeholder="http://localhost:8080">
+                    <span class="field-error" th:if="${#fields.hasErrors('baseUrl')}" th:errors="*{baseUrl}">Required</span>
+                </label>
+
+                <label>
+                    HTTP method
+                    <select th:field="*{httpMethod}">
+                        <option th:each="method : ${httpMethodOptions}" th:value="${method}" th:text="${method}">POST</option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('httpMethod')}" th:errors="*{httpMethod}">Required</span>
+                </label>
+
+                <label>
+                    Path
+                    <input type="text" th:field="*{path}" placeholder="/simulator/rest/premium/calculate">
+                    <span class="field-error" th:if="${#fields.hasErrors('path')}" th:errors="*{path}">Required</span>
+                </label>
+
+                <label>
+                    Timeout millis
+                    <input type="number" min="100" max="60000" step="100" th:field="*{timeoutMillis}">
+                    <span class="field-error" th:if="${#fields.hasErrors('timeoutMillis')}" th:errors="*{timeoutMillis}">Required</span>
+                </label>
+
+                <label>
+                    Headers JSON
+                    <textarea th:field="*{headersJson}" placeholder='{"Content-Type":"application/json"}'></textarea>
+                    <span class="field-error" th:if="${#fields.hasErrors('headersJson')}" th:errors="*{headersJson}">Invalid JSON</span>
+                </label>
+
+                <label>
+                    Sample request body
+                    <textarea th:field="*{sampleRequestBody}" placeholder='{"policyNo":"P001","age":42,"coverageAmount":100000000}'></textarea>
+                    <span class="field-error" th:if="${#fields.hasErrors('sampleRequestBody')}" th:errors="*{sampleRequestBody}">Too long</span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" th:field="*{active}">
+                    <span>Active for manual execution</span>
+                </label>
+
+                <div class="form-actions">
+                    <button class="button primary" type="submit">Save REST config</button>
+                    <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>
