@@ -37,6 +37,9 @@
                 <a class="button"
                    th:if="${interfaceDefinition.protocolType.name() == 'REST'}"
                    th:href="@{/admin/interfaces/{id}/rest-config(id=${interfaceDefinition.id})}">Configure REST</a>
+                <a class="button"
+                   th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}"
+                   th:href="@{/admin/interfaces/{id}/soap-config(id=${interfaceDefinition.id})}">Configure SOAP</a>
                 <a class="button primary" th:href="@{/admin/interfaces/{id}/edit(id=${interfaceDefinition.id})}">Edit</a>
             </div>
         </div>
@@ -81,8 +84,9 @@
                 </div>
                 <div class="detail-item full">
                     <dt>Phase note</dt>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'REST'}">Phase 3 sends real HTTP requests through the configured REST endpoint. Other protocols remain mock-driven.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() != 'REST'}">Phase 3 keeps this protocol mock-driven while REST is implemented as the first real integration path.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'REST'}">Phase 4 keeps REST on the real HTTP executor introduced in Phase 3.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">Phase 4 sends real SOAP XML requests through the configured SOAP endpoint.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP'}">Phase 4 keeps this protocol mock-driven while REST and SOAP are implemented as real integration paths.</dd>
                 </div>
             </dl>
         </section>
@@ -136,6 +140,55 @@
             </dl>
         </section>
 
+        <section class="panel spacing-bottom" th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">SOAP settings</p>
+                    <h3>Endpoint configuration</h3>
+                </div>
+                <a class="button" th:href="@{/admin/interfaces/{id}/soap-config(id=${interfaceDefinition.id})}">Edit SOAP config</a>
+            </div>
+            <div class="empty-state panel-body" th:if="${soapConfig == null}">
+                SOAP endpoint settings are not configured yet.
+            </div>
+            <dl class="detail-grid" th:if="${soapConfig != null}">
+                <div class="detail-item">
+                    <dt>Operation</dt>
+                    <dd th:text="${soapConfig.operationName}">PolicyInquiry</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Active</dt>
+                    <dd>
+                        <span class="status"
+                              th:classappend="${soapConfig.active} ? ' status-active' : ' status-inactive'"
+                              th:text="${soapConfig.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+                    </dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Endpoint URL</dt>
+                    <dd th:text="${soapConfig.endpointUrl}">http://localhost:8080/simulator/soap/policy-inquiry</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>SOAPAction</dt>
+                    <dd th:text="${soapConfig.soapAction == null ? '-' : soapConfig.soapAction}">urn:PolicyInquiry</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Namespace URI</dt>
+                    <dd th:text="${soapConfig.namespaceUri}">http://insurancehub.local/soap/policy</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Timeout</dt>
+                    <dd th:text="${soapConfig.timeoutMillis + ' ms'}">5000 ms</dd>
+                </div>
+                <div class="detail-item full">
+                    <dt>Request template XML</dt>
+                    <dd>
+                        <pre class="payload compact" th:text="${soapConfig.requestTemplateXml}">template</pre>
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
         <section class="panel spacing-bottom">
             <div class="panel-header">
                 <div>
@@ -154,13 +207,14 @@
                 <label>
                     Request payload
                     <textarea th:field="*{requestPayload}"
-                              th:placeholder="${interfaceDefinition.protocolType.name() == 'REST'} ? 'JSON request body sent to the configured REST endpoint. Include FAIL to trigger simulator failure.' : 'Optional mock request payload. Include FAIL to simulate failure.'"></textarea>
+                              th:placeholder="${interfaceDefinition.protocolType.name() == 'REST'} ? 'JSON request body sent to the configured REST endpoint. Include FAIL to trigger simulator failure.' : (${interfaceDefinition.protocolType.name() == 'SOAP'} ? 'SOAP envelope XML sent to the configured SOAP endpoint. Include FAIL to trigger a SOAP fault.' : 'Optional mock request payload. Include FAIL to simulate failure.')"></textarea>
                     <span class="field-error" th:if="${#fields.hasErrors('requestPayload')}" th:errors="*{requestPayload}">Too long</span>
                 </label>
                 <div class="form-actions">
                     <button class="button primary" type="submit" th:disabled="${interfaceDefinition.status.name() != 'ACTIVE'}">Execute now</button>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'REST'}">REST calls the configured endpoint. The local simulator returns a controlled failure when the payload contains FAIL.</p>
-                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() != 'REST'}">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
+                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">SOAP calls the configured endpoint. The local simulator returns a SOAP fault when the XML contains FAIL.</p>
+                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP'}">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
                 </div>
             </form>
         </section>

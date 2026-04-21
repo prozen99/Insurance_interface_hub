@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'SOAP config | ' + ${interfaceDefinition.interfaceCode}">SOAP config</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">SOAP endpoint configuration</p>
+            <h2 th:text="${interfaceDefinition.interfaceCode}">IF_SOAP_POLICY_001</h2>
+            <p class="lead">Configure the local-demo SOAP endpoint, SOAPAction, operation metadata, timeout, and request XML template.</p>
+        </header>
+
+        <div class="toolbar">
+            <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Back to interface</a>
+        </div>
+
+        <section class="panel">
+            <form class="form-grid panel-body"
+                  th:action="@{/admin/interfaces/{id}/soap-config(id=${interfaceDefinition.id})}"
+                  th:object="${form}"
+                  method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" th:field="*{id}">
+
+                <label>
+                    Endpoint URL
+                    <input type="text" th:field="*{endpointUrl}" placeholder="http://localhost:8080/simulator/soap/policy-inquiry">
+                    <span class="field-error" th:if="${#fields.hasErrors('endpointUrl')}" th:errors="*{endpointUrl}">Required</span>
+                </label>
+
+                <label>
+                    SOAPAction
+                    <input type="text" th:field="*{soapAction}" placeholder="urn:PolicyInquiry">
+                    <span class="field-error" th:if="${#fields.hasErrors('soapAction')}" th:errors="*{soapAction}">Too long</span>
+                </label>
+
+                <label>
+                    Operation name
+                    <input type="text" th:field="*{operationName}" placeholder="PolicyInquiry">
+                    <span class="field-error" th:if="${#fields.hasErrors('operationName')}" th:errors="*{operationName}">Required</span>
+                </label>
+
+                <label>
+                    Namespace URI
+                    <input type="text" th:field="*{namespaceUri}" placeholder="http://insurancehub.local/soap/policy">
+                    <span class="field-error" th:if="${#fields.hasErrors('namespaceUri')}" th:errors="*{namespaceUri}">Required</span>
+                </label>
+
+                <label>
+                    Timeout millis
+                    <input type="number" min="100" max="60000" step="100" th:field="*{timeoutMillis}">
+                    <span class="field-error" th:if="${#fields.hasErrors('timeoutMillis')}" th:errors="*{timeoutMillis}">Required</span>
+                </label>
+
+                <label>
+                    Request template XML
+                    <textarea class="large-textarea" th:field="*{requestTemplateXml}" placeholder="<soapenv:Envelope>...</soapenv:Envelope>"></textarea>
+                    <span class="field-error" th:if="${#fields.hasErrors('requestTemplateXml')}" th:errors="*{requestTemplateXml}">Invalid XML</span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" th:field="*{active}">
+                    <span>Active for manual execution</span>
+                </label>
+
+                <div class="form-actions">
+                    <button class="button primary" type="submit">Save SOAP config</button>
+                    <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

@@ -338,6 +338,10 @@ textarea {
     resize: vertical;
 }
 
+.large-textarea {
+    min-height: 260px;
+}
+
 .field-error {
     color: var(--error-text);
     font-size: 13px;

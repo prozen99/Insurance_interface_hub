@@ -84,8 +84,8 @@
         <section class="panel spacing-bottom" th:if="${execution.requestUrl != null}">
             <div class="panel-header">
                 <div>
-                    <p class="eyebrow">REST exchange</p>
-                    <h3>HTTP request and response</h3>
+                    <p class="eyebrow" th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP exchange' : 'REST exchange'">Protocol exchange</p>
+                    <h3 th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP request and response' : 'HTTP request and response'">Request and response</h3>
                 </div>
             </div>
             <dl class="detail-grid">
@@ -101,8 +101,12 @@
                     <dt>Latency</dt>
                     <dd th:text="${execution.latencyMs == null ? '-' : execution.latencyMs + ' ms'}">18 ms</dd>
                 </div>
+                <div class="detail-item" th:if="${execution.protocolAction != null}">
+                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAPAction' : 'Protocol action'">SOAPAction</dt>
+                    <dd th:text="${execution.protocolAction}">urn:PolicyInquiry</dd>
+                </div>
                 <div class="detail-item">
-                    <dt>URL</dt>
+                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'Endpoint URL' : 'URL'">URL</dt>
                     <dd th:text="${execution.requestUrl}">http://localhost:8080/simulator/rest/premium/calculate</dd>
                 </div>
                 <div class="detail-item full">
