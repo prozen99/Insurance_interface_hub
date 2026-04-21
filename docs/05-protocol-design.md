@@ -1,8 +1,8 @@
 # Protocol Design
 
-## Phase 4 Purpose
+## Phase 5 Purpose
 
-Phase 4 proves SOAP as the second real protocol path. REST remains real from Phase 3. MQ, BATCH, SFTP, and FTP remain mock-driven.
+Phase 5 proves MQ as the third real protocol path. REST remains real from Phase 3. SOAP remains real from Phase 4. BATCH, SFTP, and FTP remain mock-driven.
 
 ## Executor Contract
 
@@ -15,38 +15,50 @@ Phase 4 proves SOAP as the second real protocol path. REST remains real from Pha
 
 ## Current Executors
 
-| Protocol | Executor | Phase 4 Behavior |
+| Protocol | Executor | Phase 5 Behavior |
 | --- | --- | --- |
 | REST | `RestInterfaceExecutor` | Sends real HTTP calls with Spring `RestClient` |
 | SOAP | `SoapInterfaceExecutor` | Sends real SOAP XML over HTTP to the local simulator |
-| MQ | `MqMockInterfaceExecutor` | Mock |
+| MQ | `MqInterfaceExecutor` | Publishes and consumes a real JMS text message through embedded Artemis |
 | BATCH | `BatchMockInterfaceExecutor` | Mock |
 | SFTP | `SftpMockInterfaceExecutor` | Mock |
 | FTP | `FtpMockInterfaceExecutor` | Mock |
 
+## MQ Execution Rules
+
+`MqInterfaceExecutor`:
+
+1. Loads active `MqChannelConfig`.
+2. Uses the manual request payload when provided; otherwise it uses the sample MQ payload.
+3. Resolves the correlation key from `correlationKeyExpression`.
+4. Creates `MqMessageHistory` with PENDING publish/consume statuses.
+5. Publishes a JMS text message to the configured destination.
+6. Consumes a message from the same destination by `JMSCorrelationID`.
+7. Marks publish and consume statuses separately.
+8. Captures destination, message id, correlation key, payloads, latency, and error details.
+9. Returns SUCCESS when publish and consumer processing both succeed.
+10. Returns FAILED when publish fails, consume times out, or consumed payload contains `FAIL`.
+
+## Local MQ Broker Rule
+
+Phase 5 uses an embedded in-vm Artemis broker:
+
+- Enabled by `app.mq.embedded.enabled=true`
+- Server id configured with `app.mq.embedded.server-id`
+- No Docker
+- No external broker install
+- No production credentials
+
+The broker starts inside the Spring Boot process. This is intentionally demo-friendly and should be replaced by external broker configuration in a production phase.
+
 ## SOAP Execution Rules
 
-`SoapInterfaceExecutor`:
+SOAP remains unchanged from Phase 4:
 
-1. Loads active `SoapEndpointConfig`.
-2. Uses the manual request XML when provided; otherwise it uses the configured template.
-3. Sends HTTP POST with `Content-Type: text/xml`.
-4. Sends `SOAPAction` when configured.
-5. Applies the configured timeout.
-6. Captures endpoint URL, SOAPAction, request headers, response status, response headers, response XML, and latency.
-7. Returns SUCCESS for HTTP 2xx without a SOAP Fault.
-8. Returns FAILED for SOAP faults, HTTP non-2xx, or client errors.
-
-## Local SOAP Simulator Rule
-
-- Normal SOAP XML: HTTP 200 with a SOAP success envelope.
-- SOAP XML containing `FAIL`: HTTP 500 with a SOAP fault.
-
-Simulator endpoints:
-
-- `POST /simulator/soap/policy-inquiry`
-- `POST /simulator/soap/claim-status`
-- `POST /simulator/soap/premium-confirmation`
+- Sends HTTP POST with `Content-Type: text/xml`.
+- Sends `SOAPAction` when configured.
+- Treats HTTP 2xx without SOAP Fault as success.
+- Treats SOAP Faults, HTTP non-2xx, or client errors as failure.
 
 ## REST Rule
 
@@ -60,7 +72,7 @@ REST remains unchanged from Phase 3. It sends a real HTTP request to the configu
 
 ## Future Real Adapter Rules
 
-When MQ, SFTP/FTP, and Batch are added:
+When SFTP/FTP and Batch are added:
 
 - Keep `InterfaceExecutionService` as the orchestration layer.
 - Keep protocol-specific network details inside `com.insurancehub.protocol.*`.

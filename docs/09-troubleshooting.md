@@ -296,3 +296,88 @@ Fix:
 Prevention:
 
 - Treat `FAIL` as a deliberate local simulator trigger, not a production rule.
+
+## Phase 5 Compile Error From Ambiguous `Configuration` Import
+
+Symptom:
+
+- `compileJava` fails in `LocalMqConfig`.
+- Error mentions that `Configuration` is ambiguous between Artemis and Spring.
+
+Cause:
+
+- The class imported both `org.apache.activemq.artemis.core.config.Configuration` and `org.springframework.context.annotation.Configuration`.
+
+Fix:
+
+- Keep the Spring annotation import.
+- Use the fully qualified Artemis type in the local variable declaration.
+
+Prevention:
+
+- Avoid single-type imports when two framework types share common names such as `Configuration`.
+- Prefer descriptive variable names and fully qualified names in integration configuration classes.
+
+## Embedded Artemis Server Id Must Match Client URL
+
+Symptom:
+
+- MQ publish or consume fails with an in-vm connection error.
+- The app starts, but the JMS client cannot connect to `vm://{serverId}`.
+
+Cause:
+
+- The embedded broker acceptor used the default in-vm server id while the connection factory URL used the configured `app.mq.embedded.server-id`.
+
+Fix:
+
+- Pass `TransportConstants.SERVER_ID_PROP_NAME` into the in-vm acceptor configuration.
+- Keep `ActiveMQConnectionFactory("vm://" + app.mq.embedded.server-id)` aligned with the embedded broker.
+
+Prevention:
+
+- When adding local broker properties, verify both server startup and client factory creation use the same value.
+- Keep an automated publish/consume test with a non-default server id.
+
+## MQ Consumer Failure Is Separate From Publish Success
+
+Symptom:
+
+- Execution status is FAILED even though an MQ message id was generated.
+- MQ message history shows publish SUCCESS and consume FAILED.
+
+Cause:
+
+- Phase 5 deliberately distinguishes producer success from consumer processing success.
+- Payloads containing `FAIL` are published, then rejected by the local demo consumer rule.
+
+Fix:
+
+- Remove `FAIL` from the payload for success demos.
+- Keep `FAIL` when demonstrating failed consumer processing and retry.
+
+Prevention:
+
+- Explain the two-stage MQ status model during demos.
+- Check the MQ message history section before assuming publish failed.
+
+## Embedded Broker Is For Local Demo Only
+
+Symptom:
+
+- A developer expects an external Artemis console, port, or Docker container.
+- No external broker process appears in Task Manager.
+
+Cause:
+
+- Phase 5 uses an embedded in-vm Artemis broker inside the Spring Boot process.
+
+Fix:
+
+- Start only the Spring Boot application.
+- Use the seeded `IF_MQ_POLICY_001` interface to publish and consume messages locally.
+
+Prevention:
+
+- Keep production broker setup out of Phase 5.
+- Document any future external broker migration as a separate phase decision.

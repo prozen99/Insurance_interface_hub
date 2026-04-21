@@ -40,7 +40,7 @@ Status: Complete
 
 ## Phase 4 - Real SOAP Integration
 
-Status: Complete in the current codebase
+Status: Complete
 
 - SOAP endpoint configuration UI and validation.
 - Real SOAP-over-HTTP executor.
@@ -49,22 +49,30 @@ Status: Complete in the current codebase
 - SOAP retry through the common execution engine.
 - REST regression path preserved.
 
+## Phase 5 - Real MQ Integration
+
+Status: Complete in the current codebase
+
+- MQ channel configuration UI and validation.
+- Embedded in-vm Artemis broker for local no-Docker demos.
+- Real JMS text message publish and consume flow.
+- Correlation key generation and consume-by-correlation behavior.
+- MQ message history with separate publish and consume statuses.
+- MQ execution detail visibility for destination, message id, correlation key, metadata, payloads, latency, and errors.
+- MQ retry through the common execution engine.
+- REST and SOAP regression paths preserved.
+
 Exit criteria:
 
 - `.\gradlew.bat build` succeeds.
 - App starts with the local profile.
 - Admin login works.
 - REST execution still works.
-- SOAP config page is reachable from a SOAP interface detail page.
-- Manual SOAP execution calls the local simulator.
-- SOAP XML containing `FAIL` returns a failed execution with SOAP fault details.
-- Failed SOAP execution can be retried.
-
-## Phase 5 - MQ
-
-- Add MQ channel configuration UI and validation.
-- Implement JMS send/receive foundation.
-- Support queue names, correlation keys, and message status.
+- SOAP execution still works.
+- MQ config page is reachable from an MQ interface detail page.
+- Manual MQ execution publishes and consumes through the embedded broker.
+- Payload containing `FAIL` creates a failed MQ execution with publish success and consume failure visible.
+- Failed MQ execution can be retried.
 
 ## Phase 6 - SFTP/FTP
 

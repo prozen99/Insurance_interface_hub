@@ -2,11 +2,11 @@
 
 Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
 
-Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 4 adds SOAP as the second real protocol path. REST and SOAP now execute real local calls through simulator endpoints, while MQ, BATCH, SFTP, and FTP intentionally remain mock-driven.
+Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 5 adds MQ as the third real protocol path. REST, SOAP, and MQ now execute through real local demo infrastructure, while BATCH, SFTP, and FTP intentionally remain mock-driven.
 
 ## Current Phase
 
-Phase 4 - Real SOAP integration, SOAP-specific configuration UI, and execution detail visibility
+Phase 5 - Real MQ integration, message publish/consume flow, and admin monitoring pages
 
 Implemented:
 
@@ -15,16 +15,18 @@ Implemented:
 - Common execution engine, execution history, step logs, retry tasks, and dashboard metrics
 - REST endpoint configuration UI and real REST executor
 - SOAP endpoint configuration UI and real SOAP-over-HTTP executor
+- MQ channel configuration UI and real JMS publish/consume executor
+- Embedded in-vm Artemis broker for local demo use without Docker
 - Local REST and SOAP simulator endpoints under `/simulator/**`
-- REST/SOAP endpoint URL, method, protocol action, headers, status, payloads, latency, and error persistence
-- Retry flow for failed REST and SOAP executions
-- Mock executors retained for MQ, BATCH, SFTP, and FTP
+- REST/SOAP/MQ request, response, action, status, payload, latency, and error persistence
+- Retry flow for failed REST, SOAP, and MQ executions
+- Mock executors retained for BATCH, SFTP, and FTP
 
 Still intentionally out of scope:
 
-- Real Artemis/JMS producer or consumer flows
-- SFTP/FTP sessions or file upload/download
+- Real SFTP/FTP sessions or file upload/download
 - Spring Batch scheduling and job launching
+- Production broker topology, durable queues, DLQ policy, or external MQ credentials
 
 ## REST Demo Flow
 
@@ -41,11 +43,21 @@ Seed data includes `IF_SOAP_POLICY_001` with a SOAP config targeting:
 
 The SOAP simulator returns HTTP 200 with a SOAP response for normal XML and HTTP 500 with a SOAP fault when the XML contains `FAIL`.
 
+## MQ Demo Flow
+
+Seed data includes `IF_MQ_POLICY_001` with an MQ config targeting:
+
+- Broker type: `EMBEDDED_ARTEMIS`
+- Destination: `insurancehub.demo.policy.events`
+- Correlation key expression: `MQ-{executionNo}`
+
+The app starts an embedded in-vm Artemis broker by default through `app.mq.embedded.enabled=true`. Manual MQ execution publishes a text message, consumes it by correlation key, records publish/consume status, and fails deterministically when the consumed payload contains `FAIL`.
+
 ## Supported Protocol Classification
 
 - REST: real local HTTP execution
 - SOAP: real local SOAP-over-HTTP execution
-- MQ: mock executor
+- MQ: real local JMS publish/consume execution through embedded Artemis
 - BATCH: mock executor
 - SFTP: mock executor
 - FTP: mock executor
@@ -58,6 +70,7 @@ The SOAP simulator returns HTTP 200 with a SOAP response for normal XML and HTTP
 - Thymeleaf
 - Spring Security form login
 - Spring Data JPA
+- Spring JMS with embedded Artemis
 - Flyway
 - Local MySQL
 
@@ -131,7 +144,7 @@ The database stores a BCrypt hash, not the plain password.
 - Phase 2: common execution engine, history, failure handling, retry
 - Phase 3: real REST integration and simulator
 - Phase 4: real SOAP integration and simulator
-- Phase 5: MQ
+- Phase 5: real MQ integration with embedded Artemis
 - Phase 6: SFTP/FTP
 - Phase 7: Batch
 - Phase 8: monitoring/dashboard

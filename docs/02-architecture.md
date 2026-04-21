@@ -2,7 +2,7 @@
 
 ## Architecture Style
 
-Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 4 keeps the common execution engine protocol-agnostic and replaces only the SOAP strategy with a real SOAP-over-HTTP executor. REST stays real, and MQ, BATCH, SFTP, and FTP stay mock-driven.
+Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 5 keeps the common execution engine protocol-agnostic and replaces only the MQ strategy with a real local JMS executor. REST and SOAP stay real, while BATCH, SFTP, and FTP stay mock-driven.
 
 ## Package Map
 
@@ -16,7 +16,8 @@ Insurance Interface Hub remains a modular monolith: one Spring Boot application 
 | `com.insurancehub.interfacehub.presentation` | Thymeleaf CRUD and execution controllers |
 | `com.insurancehub.protocol.rest` | Real REST executor, REST config, and REST simulator |
 | `com.insurancehub.protocol.soap` | Real SOAP executor, SOAP config, and SOAP simulator |
-| `com.insurancehub.protocol.mq`, `batch`, `sftp`, `ftp` | Mock executors until their real phases |
+| `com.insurancehub.protocol.mq` | Real MQ executor, embedded broker config, MQ channel config, and message history |
+| `com.insurancehub.protocol.batch`, `sftp`, `ftp` | Mock executors until their real phases |
 
 ## Execution Flow
 
@@ -30,11 +31,15 @@ flowchart TD
     Factory --> Protocol{"Protocol type"}
     Protocol -->|REST| Rest["RestInterfaceExecutor"]
     Protocol -->|SOAP| Soap["SoapInterfaceExecutor"]
+    Protocol -->|MQ| Mq["MqInterfaceExecutor"]
     Protocol -->|Other| Mock["Mock executor"]
     Rest --> RestSimulator["Local REST simulator"]
     Soap --> SoapSimulator["Local SOAP simulator"]
+    Mq --> Broker["Embedded in-vm Artemis broker"]
+    Broker --> Consume["Local JMS consume by correlation key"]
     RestSimulator --> Steps["Execution step logs"]
     SoapSimulator --> Steps
+    Consume --> Steps
     Mock --> Steps
     Steps --> Result{"Success?"}
     Result -->|Yes| Success["Mark execution SUCCESS"]
@@ -42,27 +47,30 @@ flowchart TD
     Failure --> Retry["Create WAITING retry task"]
 ```
 
-## SOAP Adapter Boundary
+## MQ Adapter Boundary
 
-`SoapInterfaceExecutor` owns:
+`MqInterfaceExecutor` owns:
 
-- SOAP endpoint config lookup
-- SOAP request XML selection
-- endpoint URL, SOAPAction, and timeout handling
-- SOAP-over-HTTP POST execution
-- HTTP status, response XML, response headers, and latency capture
-- conversion of SOAP faults and client errors into `ExecutionResult`
+- active MQ channel config lookup
+- text payload selection
+- correlation key generation
+- publish to the configured local destination
+- consume from the same destination by `JMSCorrelationID`
+- publish/consume status and message history persistence
+- latency, message id, correlation key, and error capture
 
-`InterfaceExecutionService` remains the orchestration layer and does not know SOAP network details.
+`LocalMqConfig` starts an embedded in-vm Artemis broker when `app.mq.embedded.enabled=true`. The broker is local to the app process and uses no Docker or external service.
+
+`InterfaceExecutionService` remains the orchestration layer and does not know JMS broker details.
 
 ## Retry Flow
 
-Retry still creates a new execution linked to the original failed execution. REST and SOAP retries use their real executors. Mock protocols use their mock executors.
+Retry still creates a new execution linked to the original failed execution. REST, SOAP, and MQ retries use their real executors. Mock protocols use their mock executors.
 
 ## Security Posture
 
-Spring Security form login is backed by the `admin_user` table. Passwords are stored as BCrypt hashes. `/admin/**` requires authentication. `/simulator/**` is permitted and CSRF-ignored so server-side REST and SOAP executors can call local simulator POST endpoints.
+Spring Security form login is backed by the `admin_user` table. Passwords are stored as BCrypt hashes. `/admin/**` requires authentication. `/simulator/**` is permitted and CSRF-ignored so server-side REST and SOAP executors can call local simulator POST endpoints. MQ is internal to the application process in Phase 5 and has no public broker endpoint.
 
 ## Database Ownership
 
-Flyway owns schema evolution. Phase 4 adds V5 for SOAP config fields, a generic `protocol_action` execution field, and local SOAP demo seed data. Existing migrations are never edited after they are applied.
+Flyway owns schema evolution. Phase 5 adds V6 for MQ channel settings, MQ message history, and local MQ demo seed data. Existing migrations are never edited after they are applied.

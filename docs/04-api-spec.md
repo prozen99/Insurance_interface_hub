@@ -1,6 +1,6 @@
 # API Spec
 
-Phase 4 is still primarily a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local simulator endpoints.
+Phase 5 is still primarily a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local simulator endpoints. MQ is driven through admin page actions and an embedded in-vm broker, not a public HTTP broker API.
 
 ## Public/System Endpoints
 
@@ -49,10 +49,22 @@ All `/admin/**` endpoints require authentication.
 | POST | `/admin/interfaces/{id}/rest-config` | Save REST endpoint configuration |
 | GET | `/admin/interfaces/{id}/soap-config` | SOAP endpoint configuration form |
 | POST | `/admin/interfaces/{id}/soap-config` | Save SOAP endpoint configuration |
+| GET | `/admin/interfaces/{id}/mq-config` | MQ channel configuration form |
+| POST | `/admin/interfaces/{id}/mq-config` | Save MQ channel configuration |
 | GET | `/admin/executions` | Execution history list |
 | GET | `/admin/executions/failed` | Failed execution list |
-| GET | `/admin/executions/{id}` | Execution detail with protocol exchange data |
+| GET | `/admin/executions/{id}` | Execution detail with protocol exchange data and MQ message history |
 | POST | `/admin/executions/{id}/retry` | Retry a failed execution |
+
+## MQ Config Form Fields
+
+- `brokerType`: required, currently `EMBEDDED_ARTEMIS`
+- `destinationName`: required, max 180 characters
+- `routingKey`: optional, max 180 characters
+- `messageType`: required, currently `TEXT`
+- `correlationKeyExpression`: optional, max 300 characters, supports `{executionNo}` and `{interfaceCode}`
+- `timeoutMillis`: 100 to 60000
+- `active`: enables or disables this MQ config for execution
 
 ## SOAP Config Form Fields
 
@@ -68,7 +80,7 @@ All `/admin/**` endpoints require authentication.
 
 - `requestPayload`: optional, max 12000 characters
 
-For REST, `requestPayload` is sent as the HTTP request body for POST. For SOAP, it is sent as the SOAP XML envelope. For mock protocols, it is only used by the deterministic mock rule.
+For REST, `requestPayload` is sent as the HTTP request body for POST. For SOAP, it is sent as the SOAP XML envelope. For MQ, it is sent as the JMS text message body. For mock protocols, it is only used by the deterministic mock rule.
 
 ## Response Standard For Future JSON APIs
 
