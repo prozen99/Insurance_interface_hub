@@ -33,7 +33,7 @@ Optional:
 $env:INSURANCE_HUB_PORT="8080"
 ```
 
-If the port is changed, update REST endpoint config base URLs in the admin UI.
+If the port is changed, update REST and SOAP endpoint config URLs in the admin UI.
 
 ## Build
 
@@ -52,39 +52,31 @@ If the port is changed, update REST endpoint config base URLs in the admin UI.
 - Login ID: `admin`
 - Password: `admin123!`
 
-## Verify Phase 3
+## Verify Phase 4
 
 1. Open http://localhost:8080/login.
 2. Log in.
 3. Open http://localhost:8080/admin/interfaces.
-4. Open `IF_REST_POLICY_001`.
-5. Confirm the REST settings panel points to `http://localhost:8080/simulator/rest/premium/calculate`.
-6. Open Edit REST config and confirm method, path, timeout, headers, and sample body are editable.
-7. Return to the interface detail page.
-8. Execute with the sample JSON payload and confirm SUCCESS.
-9. Open execution detail and confirm URL, method, status code, latency, request headers, response headers, request payload, and response payload are visible.
-10. Execute again with `FAIL` in the payload and confirm FAILED.
-11. Open the failed execution detail and click Retry.
+4. Open `IF_REST_POLICY_001` and run the REST success demo to confirm REST still works.
+5. Open `IF_SOAP_POLICY_001`.
+6. Confirm the SOAP settings panel points to `http://localhost:8080/simulator/soap/policy-inquiry`.
+7. Open Edit SOAP config and confirm endpoint URL, SOAPAction, operation, namespace, timeout, and XML template are editable.
+8. Return to the SOAP interface detail page.
+9. Execute with the sample SOAP XML and confirm SUCCESS.
+10. Open execution detail and confirm endpoint URL, SOAPAction, status code, latency, request XML, and response XML are visible.
+11. Execute again with `FAIL` in the XML and confirm FAILED with SOAP fault XML.
+12. Open the failed execution detail and click Retry.
 
-## Simulator Smoke Checks
-
-GET policy success:
-
-```powershell
-Invoke-RestMethod http://localhost:8080/simulator/rest/policy/POL-001
-```
-
-POST premium failure:
+## SOAP Simulator Smoke Check
 
 ```powershell
-Invoke-RestMethod `
+Invoke-WebRequest `
   -Method Post `
-  -Uri http://localhost:8080/simulator/rest/premium/calculate `
-  -ContentType "application/json" `
-  -Body '{"policyNo":"FAIL"}'
+  -Uri http://localhost:8080/simulator/soap/policy-inquiry `
+  -ContentType "text/xml" `
+  -Headers @{"SOAPAction"="urn:PolicyInquiry"} `
+  -Body '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"><soapenv:Body><PolicyInquiryRequest><policyNo>POL-001</policyNo></PolicyInquiryRequest></soapenv:Body></soapenv:Envelope>'
 ```
-
-The failure command returns HTTP 422 by design.
 
 ## Reset Local Database
 

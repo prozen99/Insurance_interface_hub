@@ -1,16 +1,16 @@
 # ERD
 
-Phase 3 extends the execution schema through `V4__phase_3_real_rest_integration.sql`.
+Phase 4 extends the schema through `V5__phase_4_real_soap_integration.sql`.
 
 ## Logical ERD
 
 ```mermaid
 erDiagram
-    ADMIN_USER ||--o{ AUDIT_LOG : writes
     PARTNER_COMPANY ||--o{ INTERFACE_DEFINITION : owns
     INTERNAL_SYSTEM ||--o{ INTERFACE_DEFINITION : connects
     INTERFACE_DEFINITION ||--o{ INTERFACE_EXECUTION : runs
     INTERFACE_DEFINITION ||--o| REST_ENDPOINT_CONFIG : configures
+    INTERFACE_DEFINITION ||--o| SOAP_ENDPOINT_CONFIG : configures
     INTERFACE_EXECUTION ||--o{ INTERFACE_EXECUTION_STEP : contains
     INTERFACE_EXECUTION ||--o{ INTERFACE_RETRY_TASK : creates
     INTERFACE_EXECUTION ||--o{ INTERFACE_EXECUTION : retry_source
@@ -22,8 +22,6 @@ erDiagram
         varchar protocol_type
         varchar direction_type
         varchar status
-        bigint partner_company_id FK
-        bigint internal_system_id FK
     }
 
     REST_ENDPOINT_CONFIG {
@@ -39,10 +37,21 @@ erDiagram
         tinyint active_yn
     }
 
+    SOAP_ENDPOINT_CONFIG {
+        bigint id PK
+        bigint interface_definition_id FK
+        varchar service_url
+        varchar soap_action
+        varchar operation_name
+        varchar namespace_uri
+        longtext request_template_xml
+        int timeout_millis
+        tinyint active_yn
+    }
+
     INTERFACE_EXECUTION {
         bigint id PK
         varchar execution_no UK
-        varchar execution_key UK
         bigint interface_definition_id FK
         bigint retry_source_execution_id FK
         varchar protocol_type
@@ -51,6 +60,7 @@ erDiagram
         longtext request_payload
         varchar request_url
         varchar request_method
+        varchar protocol_action
         longtext request_headers
         longtext response_payload
         int response_status_code
@@ -58,8 +68,6 @@ erDiagram
         bigint latency_ms
         varchar error_code
         varchar error_message
-        datetime started_at
-        datetime finished_at
     }
 
     INTERFACE_EXECUTION_STEP {
@@ -69,8 +77,6 @@ erDiagram
         varchar step_name
         varchar status
         varchar message
-        datetime started_at
-        datetime finished_at
     }
 
     INTERFACE_RETRY_TASK {
@@ -84,36 +90,15 @@ erDiagram
     }
 ```
 
-## Phase 3 Migration Notes
+## Phase 4 Migration Notes
 
-V4 adds:
+V5 adds:
 
-- `rest_endpoint_config.base_url`
-- `rest_endpoint_config.path`
-- `rest_endpoint_config.headers_json`
-- `rest_endpoint_config.sample_request_body`
-- `rest_endpoint_config.active_yn`
-- `interface_execution.request_url`
-- `interface_execution.request_method`
-- `interface_execution.request_headers`
-- `interface_execution.response_status_code`
-- `interface_execution.response_headers`
-- `interface_execution.latency_ms`
-- sample REST config for `IF_REST_POLICY_001`
+- `soap_endpoint_config.operation_name`
+- `soap_endpoint_config.request_template_xml`
+- `soap_endpoint_config.active_yn`
+- `interface_execution.protocol_action`
+- sample SOAP interface `IF_SOAP_POLICY_001`
+- sample SOAP config for the local policy inquiry simulator
 
-The legacy `rest_endpoint_config.endpoint_url` column remains populated for compatibility with the Phase 0 baseline. The application uses `base_url + path` and synchronizes `endpoint_url`.
-
-## Status Enums
-
-Execution status:
-
-- PENDING
-- RUNNING
-- SUCCESS
-- FAILED
-
-Retry status:
-
-- WAITING
-- DONE
-- CANCELLED
+The existing `soap_endpoint_config.service_url` column is mapped as the SOAP endpoint URL in application code.

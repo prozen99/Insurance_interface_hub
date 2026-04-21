@@ -25,45 +25,40 @@ Status: Complete
 
 Status: Complete
 
-- Common `InterfaceExecutionService`.
-- `InterfaceExecutor` contract.
-- `InterfaceExecutorFactory`.
-- REST, SOAP, MQ, BATCH, SFTP, and FTP mock executors.
-- Manual execution from interface detail.
-- Execution history list.
-- Execution detail with step logs.
-- Failed execution retry action.
-- Retry task persistence.
-- Dashboard metrics for success/failure/retry.
+- Common execution service and executor contract.
+- Manual execution, execution history, step logs, retry tasks, and dashboard metrics.
+- Mock executors for all protocol types.
 
 ## Phase 3 - Real REST Integration
 
-Status: Complete in the current codebase
+Status: Complete
 
 - REST endpoint configuration UI and validation.
 - Real REST executor using Spring `RestClient`.
-- Local simulator API for premium calculation, policy lookup, and claim registration.
-- REST request URL, method, request headers, response status, response headers, body, and latency capture.
-- Retry flow through the real REST executor.
-- Troubleshooting document updated with real development issues.
+- Local REST simulator API.
+- REST request/response metadata capture.
+
+## Phase 4 - Real SOAP Integration
+
+Status: Complete in the current codebase
+
+- SOAP endpoint configuration UI and validation.
+- Real SOAP-over-HTTP executor.
+- Local SOAP simulator API.
+- SOAP request XML, response XML, SOAPAction, HTTP status, latency, and fault visibility.
+- SOAP retry through the common execution engine.
+- REST regression path preserved.
 
 Exit criteria:
 
 - `.\gradlew.bat build` succeeds.
 - App starts with the local profile.
 - Admin login works.
-- REST config page is reachable from a REST interface detail page.
-- Manual REST execution calls the local simulator.
-- Payload containing `FAIL` returns a failed REST execution.
-- Failed REST execution can be retried.
-- Execution detail shows REST request and response metadata.
-
-## Phase 4 - SOAP
-
-- Add SOAP endpoint configuration UI and validation.
-- Implement SOAP executor using Spring Web Services.
-- Support SOAP action, namespace, timeout, and XML error handling.
-- Add XML fixture tests.
+- REST execution still works.
+- SOAP config page is reachable from a SOAP interface detail page.
+- Manual SOAP execution calls the local simulator.
+- SOAP XML containing `FAIL` returns a failed execution with SOAP fault details.
+- Failed SOAP execution can be retried.
 
 ## Phase 5 - MQ
 

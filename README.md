@@ -2,28 +2,27 @@
 
 Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
 
-Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 3 adds a real REST execution path backed by a local simulator API while SOAP, MQ, BATCH, SFTP, and FTP intentionally remain mock-driven.
+Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 4 adds SOAP as the second real protocol path. REST and SOAP now execute real local calls through simulator endpoints, while MQ, BATCH, SFTP, and FTP intentionally remain mock-driven.
 
 ## Current Phase
 
-Phase 3 - Real REST integration, REST-specific configuration UI, and troubleshooting documentation update
+Phase 4 - Real SOAP integration, SOAP-specific configuration UI, and execution detail visibility
 
 Implemented:
 
 - DB-backed Spring Security form login
 - Partner company, internal system, and interface definition CRUD
 - Common execution engine, execution history, step logs, retry tasks, and dashboard metrics
-- REST endpoint configuration UI per REST interface
-- Real REST executor using Spring `RestClient`
-- Local REST simulator endpoints under `/simulator/rest/**`
-- REST request URL, method, headers, response status, response headers, payload, latency, and error persistence
-- Retry flow for failed REST executions
-- Mock executors retained for SOAP, MQ, BATCH, SFTP, and FTP
+- REST endpoint configuration UI and real REST executor
+- SOAP endpoint configuration UI and real SOAP-over-HTTP executor
+- Local REST and SOAP simulator endpoints under `/simulator/**`
+- REST/SOAP endpoint URL, method, protocol action, headers, status, payloads, latency, and error persistence
+- Retry flow for failed REST and SOAP executions
+- Mock executors retained for MQ, BATCH, SFTP, and FTP
 
 Still intentionally out of scope:
 
-- Real SOAP XML mapping and SOAP client calls
-- Artemis/JMS producer or consumer flows
+- Real Artemis/JMS producer or consumer flows
 - SFTP/FTP sessions or file upload/download
 - Spring Batch scheduling and job launching
 
@@ -33,17 +32,19 @@ Seed data includes `IF_REST_POLICY_001` with a REST config targeting:
 
 - `POST http://localhost:8080/simulator/rest/premium/calculate`
 
-Additional simulator endpoints:
+## SOAP Demo Flow
 
-- `GET /simulator/rest/policy/{policyNo}`
-- `POST /simulator/rest/claim/register`
+Seed data includes `IF_SOAP_POLICY_001` with a SOAP config targeting:
 
-The simulator returns success for normal requests and a controlled failure when the path variable or request body contains `FAIL`.
+- `POST http://localhost:8080/simulator/soap/policy-inquiry`
+- SOAPAction: `urn:PolicyInquiry`
+
+The SOAP simulator returns HTTP 200 with a SOAP response for normal XML and HTTP 500 with a SOAP fault when the XML contains `FAIL`.
 
 ## Supported Protocol Classification
 
-- REST: real local HTTP execution in Phase 3
-- SOAP: mock executor
+- REST: real local HTTP execution
+- SOAP: real local SOAP-over-HTTP execution
 - MQ: mock executor
 - BATCH: mock executor
 - SFTP: mock executor
@@ -93,7 +94,7 @@ Open:
 - Dashboard: http://localhost:8080/admin
 - Interfaces: http://localhost:8080/admin/interfaces
 - Executions: http://localhost:8080/admin/executions
-- REST simulator smoke target: http://localhost:8080/simulator/rest/policy/POL-001
+- REST simulator: http://localhost:8080/simulator/rest/policy/POL-001
 - Smoke API: http://localhost:8080/api/smoke
 
 ## Local Demo Login
@@ -129,7 +130,7 @@ The database stores a BCrypt hash, not the plain password.
 - Phase 1: admin authentication and master CRUD
 - Phase 2: common execution engine, history, failure handling, retry
 - Phase 3: real REST integration and simulator
-- Phase 4: SOAP
+- Phase 4: real SOAP integration and simulator
 - Phase 5: MQ
 - Phase 6: SFTP/FTP
 - Phase 7: Batch

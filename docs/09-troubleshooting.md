@@ -234,3 +234,65 @@ Fix:
 Prevention:
 
 - Any MVC test that renders admin templates should provide `_csrf`, even when security filters are disabled.
+
+## SOAP Execution Cannot Connect To Simulator
+
+Symptom:
+
+- Execution detail shows `SOAP_CLIENT_ERROR`.
+- Error message mentions connection refused or timeout.
+
+Cause:
+
+- The SOAP config points to the wrong port, or the app is not running.
+
+Fix:
+
+- If the app runs on 8080, use `http://localhost:8080/simulator/soap/policy-inquiry`.
+- If `INSURANCE_HUB_PORT` is changed, update the SOAP config endpoint URL to the same port.
+
+Prevention:
+
+- Keep seeded demos on port 8080.
+- When changing ports, update REST and SOAP configs before manual execution.
+
+## SOAP Config Rejects Request Template XML
+
+Symptom:
+
+- Saving the SOAP config form returns a validation error for request template XML.
+
+Cause:
+
+- The XML is not well-formed, or it contains a disallowed document type declaration.
+
+Fix:
+
+- Use a complete SOAP envelope with matching opening and closing tags.
+- Do not include `DOCTYPE`.
+
+Prevention:
+
+- Start from the seeded template on `IF_SOAP_POLICY_001`.
+- Keep simulator templates small and readable for local demos.
+
+## SOAP Fault Appears As A Failed Execution
+
+Symptom:
+
+- Execution status is FAILED.
+- Response XML contains `<soapenv:Fault>`.
+- HTTP status is 500.
+
+Cause:
+
+- The local simulator returns a controlled SOAP fault when request XML contains `FAIL`.
+
+Fix:
+
+- Remove `FAIL` from the request XML for success demos.
+- Keep `FAIL` when demonstrating failure handling and retry.
+
+Prevention:
+
+- Treat `FAIL` as a deliberate local simulator trigger, not a production rule.

@@ -6,12 +6,12 @@
 2. Explain the business goal.
 3. Show the phase roadmap.
 4. Show `com.insurancehub.interfacehub.application.execution`.
-5. Show `com.insurancehub.protocol.rest`.
+5. Show `com.insurancehub.protocol.rest` and `com.insurancehub.protocol.soap`.
 
 What this proves:
 
 - The project has clear business context.
-- Phase 3 keeps a common execution engine while REST becomes a real adapter.
+- REST and SOAP are real protocol adapters behind the same common execution engine.
 
 ## Scenario 2 - Login And Dashboard
 
@@ -25,47 +25,57 @@ What this proves:
 - DB-backed form login still works.
 - Dashboard shows execution metrics.
 
-## Scenario 3 - REST Configuration
+## Scenario 3 - REST Regression
 
-1. Open `/admin/interfaces`.
-2. Open `IF_REST_POLICY_001`.
-3. Review the REST settings panel.
-4. Click Edit REST config.
-5. Confirm base URL, method, path, timeout, headers JSON, and sample request body.
+1. Open `IF_REST_POLICY_001`.
+2. Execute with the sample JSON payload.
+3. Review the execution detail.
 
 What this proves:
 
-- REST-specific configuration is visible and editable.
-- Protocol-specific setup is isolated from the master interface definition.
+- REST still works after SOAP was added.
 
-## Scenario 4 - REST Manual Success
+## Scenario 4 - SOAP Configuration
 
-1. Open `IF_REST_POLICY_001`.
-2. Keep the sample request payload.
+1. Open `/admin/interfaces`.
+2. Open `IF_SOAP_POLICY_001`.
+3. Review the SOAP settings panel.
+4. Click Edit SOAP config.
+5. Confirm endpoint URL, SOAPAction, operation name, namespace URI, timeout, and request XML template.
+
+What this proves:
+
+- SOAP-specific configuration is visible and editable.
+- Protocol-specific setup remains separate from interface master data.
+
+## Scenario 5 - SOAP Manual Success
+
+1. Open `IF_SOAP_POLICY_001`.
+2. Keep the sample request XML.
 3. Click Execute now.
 4. Review the execution detail.
 
 What this proves:
 
 - Manual execution creates an execution record.
-- REST execution makes a real HTTP call to the local simulator.
-- URL, method, status code, latency, headers, and payloads are persisted.
+- SOAP execution makes a real call to the local simulator.
+- Endpoint URL, SOAPAction, status code, latency, request XML, and response XML are persisted.
 
-## Scenario 5 - REST Manual Failure
+## Scenario 6 - SOAP Fault Failure
 
-1. Open the same REST interface detail page.
-2. Enter a payload containing `FAIL`.
+1. Open the SOAP interface detail page.
+2. Add `FAIL` inside the request XML.
 3. Click Execute now.
-4. Confirm FAILED status and HTTP 422 details.
+4. Confirm FAILED status and SOAP fault response XML.
 
 What this proves:
 
-- Failure handling is driven by a real HTTP response.
+- Failure handling is driven by a real SOAP fault response.
 - Retry task creation still works.
 
-## Scenario 6 - REST Retry
+## Scenario 7 - SOAP Retry
 
-1. Open the failed REST execution detail.
+1. Open the failed SOAP execution detail.
 2. Click Retry.
 3. Review the new retry execution.
 4. Return to the original failed execution and review retry task status.
@@ -74,28 +84,27 @@ What this proves:
 
 - Retry creates a new execution.
 - Retry source linkage is understandable.
-- REST retry uses the same real executor path.
+- SOAP retry uses the same real executor path.
 
-## Scenario 7 - Non-REST Mock Boundary
+## Scenario 8 - Remaining Mock Boundary
 
-1. Create or open a SOAP, MQ, BATCH, SFTP, or FTP interface.
+1. Create or open an MQ, BATCH, SFTP, or FTP interface.
 2. Execute with a normal payload.
 3. Execute with a payload containing `FAIL`.
 
 What this proves:
 
-- Only REST has moved to real integration in Phase 3.
+- Only REST and SOAP are real in Phase 4.
 - Other protocols remain safely mock-driven.
 
-## Scenario 8 - Execution History
+## Scenario 9 - Execution History
 
 1. Open `/admin/executions`.
 2. Filter by FAILED.
-3. Filter by REST.
+3. Filter by SOAP.
 4. Open an execution detail.
 
 What this proves:
 
 - Operators can navigate execution history.
-- Status badges and filters are available.
-- REST result inspection is available from history.
+- Protocol result inspection is available from history.

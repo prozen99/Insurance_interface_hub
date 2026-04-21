@@ -2,28 +2,21 @@
 
 ## Architecture Style
 
-Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 3 keeps the common execution engine protocol-agnostic and replaces only the REST strategy with a real HTTP executor. SOAP, MQ, BATCH, SFTP, and FTP stay mock-driven until later phases.
+Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 4 keeps the common execution engine protocol-agnostic and replaces only the SOAP strategy with a real SOAP-over-HTTP executor. REST stays real, and MQ, BATCH, SFTP, and FTP stay mock-driven.
 
 ## Package Map
 
 | Package | Responsibility |
 | --- | --- |
-| `com.insurancehub.admin.application` | Admin login support and dashboard metrics |
-| `com.insurancehub.admin.domain` | Admin user model |
-| `com.insurancehub.admin.infrastructure` | Admin persistence adapters |
-| `com.insurancehub.admin.presentation` | Login and dashboard controllers |
+| `com.insurancehub.admin.*` | Admin login and dashboard |
 | `com.insurancehub.interfacehub.application` | Master data use cases |
 | `com.insurancehub.interfacehub.application.execution` | Common execution engine, executor contract, factory, result models |
-| `com.insurancehub.interfacehub.domain` | Interface, execution, retry, protocol, direction, and status enums |
-| `com.insurancehub.interfacehub.domain.entity` | Interface and execution JPA entities |
+| `com.insurancehub.interfacehub.domain` | Interface, execution, retry, protocol, direction, and status model |
 | `com.insurancehub.interfacehub.infrastructure` | Interface and execution JPA repositories |
 | `com.insurancehub.interfacehub.presentation` | Thymeleaf CRUD and execution controllers |
-| `com.insurancehub.protocol.rest` | Real REST executor |
-| `com.insurancehub.protocol.rest.application` | REST endpoint configuration use cases |
-| `com.insurancehub.protocol.rest.domain` | REST-specific enums and entities |
-| `com.insurancehub.protocol.rest.infrastructure` | REST configuration repository |
-| `com.insurancehub.protocol.rest.presentation` | REST config UI controller and local simulator API |
-| `com.insurancehub.protocol.soap`, `mq`, `batch`, `sftp`, `ftp` | Mock executors until their real phases |
+| `com.insurancehub.protocol.rest` | Real REST executor, REST config, and REST simulator |
+| `com.insurancehub.protocol.soap` | Real SOAP executor, SOAP config, and SOAP simulator |
+| `com.insurancehub.protocol.mq`, `batch`, `sftp`, `ftp` | Mock executors until their real phases |
 
 ## Execution Flow
 
@@ -34,12 +27,14 @@ flowchart TD
     Execute --> Engine["InterfaceExecutionService"]
     Engine --> Record["Create InterfaceExecution"]
     Engine --> Factory["InterfaceExecutorFactory"]
-    Factory --> RestCheck{"Protocol is REST?"}
-    RestCheck -->|Yes| RestConfig["Load RestEndpointConfig"]
-    RestConfig --> RestClient["Send HTTP request with RestClient"]
-    RestClient --> Simulator["Local REST simulator"]
-    RestCheck -->|No| Mock["Protocol mock executor"]
-    Simulator --> Steps["Execution step logs"]
+    Factory --> Protocol{"Protocol type"}
+    Protocol -->|REST| Rest["RestInterfaceExecutor"]
+    Protocol -->|SOAP| Soap["SoapInterfaceExecutor"]
+    Protocol -->|Other| Mock["Mock executor"]
+    Rest --> RestSimulator["Local REST simulator"]
+    Soap --> SoapSimulator["Local SOAP simulator"]
+    RestSimulator --> Steps["Execution step logs"]
+    SoapSimulator --> Steps
     Mock --> Steps
     Steps --> Result{"Success?"}
     Result -->|Yes| Success["Mark execution SUCCESS"]
@@ -47,33 +42,27 @@ flowchart TD
     Failure --> Retry["Create WAITING retry task"]
 ```
 
-## REST Adapter Boundary
+## SOAP Adapter Boundary
 
-`InterfaceExecutionService` does not know HTTP details. It records the execution, resolves the executor by `ProtocolType`, persists step logs, and applies success/failure/retry behavior. `RestInterfaceExecutor` owns:
+`SoapInterfaceExecutor` owns:
 
-- REST endpoint config lookup
-- URL, method, header, body, and timeout handling
-- HTTP status and latency capture
-- response body and header capture
-- conversion of HTTP or client errors into `ExecutionResult`
+- SOAP endpoint config lookup
+- SOAP request XML selection
+- endpoint URL, SOAPAction, and timeout handling
+- SOAP-over-HTTP POST execution
+- HTTP status, response XML, response headers, and latency capture
+- conversion of SOAP faults and client errors into `ExecutionResult`
+
+`InterfaceExecutionService` remains the orchestration layer and does not know SOAP network details.
 
 ## Retry Flow
 
-```mermaid
-flowchart TD
-    Failed["Failed execution detail"] --> RetryClick["Retry action"]
-    RetryClick --> Validate["Validate failed status and active interface"]
-    Validate --> NewExecution["Create new RETRY execution"]
-    NewExecution --> Executor["Resolve current protocol executor"]
-    Executor --> Result["Persist retry execution result"]
-    Result --> MarkTask["Mark original retry task DONE"]
-    MarkTask --> Detail["Retry execution detail"]
-```
+Retry still creates a new execution linked to the original failed execution. REST and SOAP retries use their real executors. Mock protocols use their mock executors.
 
 ## Security Posture
 
-Spring Security form login is backed by the `admin_user` table. Passwords are stored as BCrypt hashes. `/admin/**` requires authentication. `/simulator/**` is permitted and CSRF-ignored so the local REST executor can call simulator POST endpoints from inside the same application without a browser CSRF token.
+Spring Security form login is backed by the `admin_user` table. Passwords are stored as BCrypt hashes. `/admin/**` requires authentication. `/simulator/**` is permitted and CSRF-ignored so server-side REST and SOAP executors can call local simulator POST endpoints.
 
 ## Database Ownership
 
-Flyway owns schema evolution. Phase 3 adds V4 for REST config fields and REST execution inspection fields. Existing migrations are never edited after they are applied.
+Flyway owns schema evolution. Phase 4 adds V5 for SOAP config fields, a generic `protocol_action` execution field, and local SOAP demo seed data. Existing migrations are never edited after they are applied.

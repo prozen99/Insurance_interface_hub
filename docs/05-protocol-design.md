@@ -1,8 +1,8 @@
 # Protocol Design
 
-## Phase 3 Purpose
+## Phase 4 Purpose
 
-Phase 3 proves one real protocol end to end. REST now uses a real HTTP execution path through a local simulator API. The common execution engine, retry behavior, and execution history stay protocol-agnostic.
+Phase 4 proves SOAP as the second real protocol path. REST remains real from Phase 3. MQ, BATCH, SFTP, and FTP remain mock-driven.
 
 ## Executor Contract
 
@@ -15,60 +15,56 @@ Phase 3 proves one real protocol end to end. REST now uses a real HTTP execution
 
 ## Current Executors
 
-| Protocol | Executor | Phase 3 Behavior |
+| Protocol | Executor | Phase 4 Behavior |
 | --- | --- | --- |
 | REST | `RestInterfaceExecutor` | Sends real HTTP calls with Spring `RestClient` |
-| SOAP | `SoapMockInterfaceExecutor` | Mock |
+| SOAP | `SoapInterfaceExecutor` | Sends real SOAP XML over HTTP to the local simulator |
 | MQ | `MqMockInterfaceExecutor` | Mock |
 | BATCH | `BatchMockInterfaceExecutor` | Mock |
 | SFTP | `SftpMockInterfaceExecutor` | Mock |
 | FTP | `FtpMockInterfaceExecutor` | Mock |
 
-## REST Execution Rules
+## SOAP Execution Rules
 
-`RestInterfaceExecutor`:
+`SoapInterfaceExecutor`:
 
-1. Loads active `RestEndpointConfig`.
-2. Builds the URL from `baseUrl + path`.
-3. Parses `headersJson` into HTTP headers.
-4. Sends GET or POST using Spring `RestClient`.
+1. Loads active `SoapEndpointConfig`.
+2. Uses the manual request XML when provided; otherwise it uses the configured template.
+3. Sends HTTP POST with `Content-Type: text/xml`.
+4. Sends `SOAPAction` when configured.
 5. Applies the configured timeout.
-6. Captures request URL, method, headers, response status, response headers, body, and latency.
-7. Returns SUCCESS for HTTP 2xx.
-8. Returns FAILED for HTTP non-2xx or client errors.
+6. Captures endpoint URL, SOAPAction, request headers, response status, response headers, response XML, and latency.
+7. Returns SUCCESS for HTTP 2xx without a SOAP Fault.
+8. Returns FAILED for SOAP faults, HTTP non-2xx, or client errors.
 
-REST does not use the old mock `FAIL` rule directly. The local simulator applies the controlled failure rule so the execution still performs a real HTTP round trip.
+## Local SOAP Simulator Rule
 
-## Local Simulator Rule
-
-- Normal request: HTTP 200 and a JSON success payload.
-- Request body or path variable containing `FAIL`: HTTP 422 and a JSON failure payload.
+- Normal SOAP XML: HTTP 200 with a SOAP success envelope.
+- SOAP XML containing `FAIL`: HTTP 500 with a SOAP fault.
 
 Simulator endpoints:
 
-- `POST /simulator/rest/premium/calculate`
-- `GET /simulator/rest/policy/{policyNo}`
-- `POST /simulator/rest/claim/register`
+- `POST /simulator/soap/policy-inquiry`
+- `POST /simulator/soap/claim-status`
+- `POST /simulator/soap/premium-confirmation`
 
-## Mock Rule For Non-REST Protocols
+## REST Rule
+
+REST remains unchanged from Phase 3. It sends a real HTTP request to the configured endpoint and treats HTTP 2xx as success.
+
+## Mock Rule For Remaining Protocols
 
 - If interface code contains `FAIL`, return failure.
 - If request payload contains `FAIL`, return failure.
 - Otherwise return success.
 
-Every mock executor records step logs:
-
-1. Load interface definition.
-2. Resolve protocol mock adapter.
-3. Execute mock protocol call.
-
 ## Future Real Adapter Rules
 
-When real adapters are added:
+When MQ, SFTP/FTP, and Batch are added:
 
 - Keep `InterfaceExecutionService` as the orchestration layer.
 - Keep protocol-specific network details inside `com.insurancehub.protocol.*`.
 - Record execution steps consistently.
 - Avoid logging secrets or sensitive payloads.
 - Use timeouts for all external calls.
-- Preserve the same retry behavior unless a protocol needs documented exceptions.
+- Preserve retry behavior unless a protocol needs documented exceptions.
