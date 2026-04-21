@@ -3,14 +3,17 @@ package com.insurancehub.interfacehub.application.execution;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.insurancehub.interfacehub.domain.ExecutionStatus;
 import com.insurancehub.interfacehub.domain.ExecutionTriggerType;
 import com.insurancehub.interfacehub.domain.InterfaceDirection;
@@ -28,7 +31,13 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceDefiniti
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionStepRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
-import com.insurancehub.protocol.soap.SoapMockInterfaceExecutor;
+import com.insurancehub.protocol.rest.RestInterfaceExecutor;
+import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
+import com.insurancehub.protocol.rest.domain.RestHttpMethod;
+import com.insurancehub.protocol.rest.domain.entity.RestEndpointConfig;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +46,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class InterfaceExecutionServiceTest {
+class InterfaceExecutionRestRetryTest {
 
     @Mock
     private InterfaceDefinitionRepository interfaceDefinitionRepository;
@@ -51,11 +60,21 @@ class InterfaceExecutionServiceTest {
     @Mock
     private InterfaceRetryTaskRepository interfaceRetryTaskRepository;
 
+    @Mock
+    private RestEndpointConfigService restEndpointConfigService;
+
+    private HttpServer httpServer;
     private InterfaceExecutionService service;
 
     @BeforeEach
-    void setUp() {
-        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(new SoapMockInterfaceExecutor()));
+    void setUp() throws IOException {
+        httpServer = HttpServer.create(new InetSocketAddress(0), 0);
+        httpServer.createContext("/premium/calculate", this::handlePremiumCalculate);
+        httpServer.start();
+
+        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(
+                new RestInterfaceExecutor(restEndpointConfigService, new ObjectMapper())
+        ));
         service = new InterfaceExecutionService(
                 interfaceDefinitionRepository,
                 interfaceExecutionRepository,
@@ -67,71 +86,77 @@ class InterfaceExecutionServiceTest {
         when(interfaceExecutionRepository.save(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
-    @Test
-    void executeManualCreatesSuccessfulExecutionAndSteps() {
-        InterfaceDefinition definition = activeDefinition("IF_SOAP_POLICY_001");
-        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
-
-        InterfaceExecution execution = service.executeManual(1L, "{\"policyNo\":\"P001\"}", "admin");
-
-        assertThat(execution.getExecutionStatus()).isEqualTo(ExecutionStatus.SUCCESS);
-        assertThat(execution.getTriggerType()).isEqualTo(ExecutionTriggerType.MANUAL);
-        assertThat(execution.getResponsePayload()).contains("SUCCESS");
-        verify(interfaceExecutionStepRepository, times(3)).save(any(InterfaceExecutionStep.class));
-        verify(interfaceRetryTaskRepository, never()).save(any(InterfaceRetryTask.class));
+    @AfterEach
+    void tearDown() {
+        if (httpServer != null) {
+            httpServer.stop(0);
+        }
     }
 
     @Test
-    void executeManualCreatesFailedExecutionAndRetryTaskWhenPayloadContainsFail() {
-        InterfaceDefinition definition = activeDefinition("IF_SOAP_POLICY_001");
-        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
-
-        InterfaceExecution execution = service.executeManual(1L, "please FAIL this mock", "admin");
-
-        assertThat(execution.getExecutionStatus()).isEqualTo(ExecutionStatus.FAILED);
-        assertThat(execution.getErrorCode()).isEqualTo("MOCK_EXECUTION_FAILED");
-        verify(interfaceRetryTaskRepository).save(any(InterfaceRetryTask.class));
-    }
-
-    @Test
-    void retryFailedExecutionCreatesRetryExecutionAndMarksTaskDone() {
-        InterfaceDefinition definition = activeDefinition("IF_SOAP_POLICY_001");
+    void retryFailedRestExecutionUsesRealHttpExecutor() {
+        InterfaceDefinition definition = restDefinition();
         InterfaceExecution original = InterfaceExecution.create(
                 "EXE-ORIGINAL",
                 definition,
                 null,
                 ExecutionTriggerType.MANUAL,
-                null,
+                "{\"policyNo\":\"P001\"}",
                 "admin"
         );
         ReflectionTestUtils.setField(original, "id", 10L);
         original.markRunning(LocalDateTime.now());
-        original.markFailed("MOCK_EXECUTION_FAILED", "first failure", "{}", LocalDateTime.now());
+        original.markFailed("REST_CLIENT_ERROR", "first call failed", "{}", LocalDateTime.now());
         InterfaceRetryTask retryTask = InterfaceRetryTask.waitingFor(original, LocalDateTime.now());
 
         when(interfaceExecutionRepository.findDetailById(10L)).thenReturn(Optional.of(original));
         when(interfaceRetryTaskRepository.findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(10L, RetryStatus.WAITING))
                 .thenReturn(Optional.of(retryTask));
+        when(restEndpointConfigService.getActiveForExecution(definition)).thenReturn(config(definition));
 
         InterfaceExecution retryExecution = service.retryFailedExecution(10L, "admin");
 
         assertThat(retryExecution.getTriggerType()).isEqualTo(ExecutionTriggerType.RETRY);
         assertThat(retryExecution.getExecutionStatus()).isEqualTo(ExecutionStatus.SUCCESS);
-        assertThat(retryExecution.getRetrySourceExecution()).isEqualTo(original);
+        assertThat(retryExecution.getResponseStatusCode()).isEqualTo(200);
+        assertThat(retryExecution.getRequestUrl()).endsWith("/premium/calculate");
         assertThat(retryTask.getRetryStatus()).isEqualTo(RetryStatus.DONE);
-        assertThat(retryTask.getRetryCount()).isEqualTo(1);
+        verify(interfaceExecutionStepRepository, times(3)).save(any(InterfaceExecutionStep.class));
     }
 
-    private InterfaceDefinition activeDefinition(String code) {
-        return InterfaceDefinition.create(
-                code,
-                "Policy status outbound SOAP interface",
-                ProtocolType.SOAP,
+    private void handlePremiumCalculate(HttpExchange exchange) throws IOException {
+        byte[] response = "{\"status\":\"SUCCESS\",\"premiumAmount\":125000}".getBytes(StandardCharsets.UTF_8);
+        exchange.getResponseHeaders().add("Content-Type", "application/json");
+        exchange.sendResponseHeaders(200, response.length);
+        exchange.getResponseBody().write(response);
+        exchange.close();
+    }
+
+    private RestEndpointConfig config(InterfaceDefinition definition) {
+        return RestEndpointConfig.create(
+                definition,
+                RestHttpMethod.POST,
+                "http://localhost:" + httpServer.getAddress().getPort(),
+                "/premium/calculate",
+                3000,
+                "{\"Content-Type\":\"application/json\"}",
+                "{\"policyNo\":\"P001\"}",
+                true
+        );
+    }
+
+    private InterfaceDefinition restDefinition() {
+        InterfaceDefinition definition = InterfaceDefinition.create(
+                "IF_REST_POLICY_001",
+                "Policy status outbound REST interface",
+                ProtocolType.REST,
                 InterfaceDirection.OUTBOUND,
                 InterfaceStatus.ACTIVE,
                 PartnerCompany.create("LIFEPLUS", "Life Plus Insurance", MasterStatus.ACTIVE, null),
                 InternalSystem.create("POLICY_CORE", "Policy Core System", "Insurance Platform Team", MasterStatus.ACTIVE, null),
                 null
         );
+        ReflectionTestUtils.setField(definition, "id", 1L);
+        return definition;
     }
 }

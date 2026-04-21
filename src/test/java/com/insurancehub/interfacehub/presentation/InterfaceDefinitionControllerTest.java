@@ -20,6 +20,7 @@ import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.interfacehub.domain.entity.InternalSystem;
 import com.insurancehub.interfacehub.domain.entity.PartnerCompany;
+import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -47,6 +48,9 @@ class InterfaceDefinitionControllerTest {
 
     @MockitoBean
     private InterfaceExecutionService interfaceExecutionService;
+
+    @MockitoBean
+    private RestEndpointConfigService restEndpointConfigService;
 
     @Test
     @WithMockUser(username = "admin")
