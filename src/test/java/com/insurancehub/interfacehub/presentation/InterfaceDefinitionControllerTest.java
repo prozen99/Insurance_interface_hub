@@ -20,6 +20,7 @@ import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.interfacehub.domain.entity.InternalSystem;
 import com.insurancehub.interfacehub.domain.entity.PartnerCompany;
+import com.insurancehub.protocol.mq.application.MqChannelConfigService;
 import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
 import com.insurancehub.protocol.soap.application.SoapEndpointConfigService;
 import org.junit.jupiter.api.Test;
@@ -55,6 +56,9 @@ class InterfaceDefinitionControllerTest {
 
     @MockitoBean
     private SoapEndpointConfigService soapEndpointConfigService;
+
+    @MockitoBean
+    private MqChannelConfigService mqChannelConfigService;
 
     @Test
     @WithMockUser(username = "admin")

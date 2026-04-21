@@ -7,6 +7,8 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutio
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InternalSystemRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.PartnerCompanyRepository;
+import com.insurancehub.protocol.mq.infrastructure.repository.MqChannelConfigRepository;
+import com.insurancehub.protocol.mq.infrastructure.repository.MqMessageHistoryRepository;
 import com.insurancehub.protocol.rest.infrastructure.repository.RestEndpointConfigRepository;
 import com.insurancehub.protocol.soap.infrastructure.repository.SoapEndpointConfigRepository;
 import org.junit.jupiter.api.Test;
@@ -47,6 +49,12 @@ class InsuranceInterfaceHubApplicationTests {
 
     @MockitoBean
     private SoapEndpointConfigRepository soapEndpointConfigRepository;
+
+    @MockitoBean
+    private MqChannelConfigRepository mqChannelConfigRepository;
+
+    @MockitoBean
+    private MqMessageHistoryRepository mqMessageHistoryRepository;
 
     @Test
     void contextLoads() {

@@ -3,7 +3,6 @@ package com.insurancehub.interfacehub.application.execution;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -11,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.insurancehub.interfacehub.domain.ExecutionStatus;
 import com.insurancehub.interfacehub.domain.ExecutionTriggerType;
 import com.insurancehub.interfacehub.domain.InterfaceDirection;
@@ -28,7 +28,19 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceDefiniti
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionStepRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
-import com.insurancehub.protocol.batch.BatchMockInterfaceExecutor;
+import com.insurancehub.protocol.mq.MqInterfaceExecutor;
+import com.insurancehub.protocol.mq.application.MqChannelConfigService;
+import com.insurancehub.protocol.mq.config.LocalMqConfig;
+import com.insurancehub.protocol.mq.config.MqProperties;
+import com.insurancehub.protocol.mq.domain.MqBrokerType;
+import com.insurancehub.protocol.mq.domain.MqMessageType;
+import com.insurancehub.protocol.mq.domain.entity.MqChannelConfig;
+import com.insurancehub.protocol.mq.domain.entity.MqMessageHistory;
+import com.insurancehub.protocol.mq.infrastructure.LocalMqClient;
+import com.insurancehub.protocol.mq.infrastructure.repository.MqMessageHistoryRepository;
+import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
+import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +49,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-class InterfaceExecutionServiceTest {
+class InterfaceExecutionMqRetryTest {
+
+    private static final int TEST_SERVER_ID = 52;
 
     @Mock
     private InterfaceDefinitionRepository interfaceDefinitionRepository;
@@ -51,11 +65,30 @@ class InterfaceExecutionServiceTest {
     @Mock
     private InterfaceRetryTaskRepository interfaceRetryTaskRepository;
 
+    @Mock
+    private MqChannelConfigService mqChannelConfigService;
+
+    @Mock
+    private MqMessageHistoryRepository mqMessageHistoryRepository;
+
+    private EmbeddedActiveMQ embeddedActiveMQ;
     private InterfaceExecutionService service;
 
     @BeforeEach
-    void setUp() {
-        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(new BatchMockInterfaceExecutor()));
+    void setUp() throws Exception {
+        MqProperties properties = new MqProperties();
+        properties.getEmbedded().setServerId(TEST_SERVER_ID);
+        embeddedActiveMQ = new LocalMqConfig().embeddedActiveMQ(properties);
+        LocalMqClient localMqClient = new LocalMqClient(new ActiveMQConnectionFactory("vm://" + TEST_SERVER_ID));
+
+        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(
+                new MqInterfaceExecutor(
+                        mqChannelConfigService,
+                        mqMessageHistoryRepository,
+                        localMqClient,
+                        new ObjectMapper()
+                )
+        ));
         service = new InterfaceExecutionService(
                 interfaceDefinitionRepository,
                 interfaceExecutionRepository,
@@ -65,73 +98,73 @@ class InterfaceExecutionServiceTest {
         );
         when(interfaceExecutionRepository.existsByExecutionNo(any())).thenReturn(false);
         when(interfaceExecutionRepository.save(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(mqMessageHistoryRepository.save(any(MqMessageHistory.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    @AfterEach
+    void tearDown() throws Exception {
+        if (embeddedActiveMQ != null) {
+            embeddedActiveMQ.stop();
+        }
     }
 
     @Test
-    void executeManualCreatesSuccessfulExecutionAndSteps() {
-        InterfaceDefinition definition = activeDefinition("IF_BATCH_POLICY_001");
-        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
-
-        InterfaceExecution execution = service.executeManual(1L, "{\"policyNo\":\"P001\"}", "admin");
-
-        assertThat(execution.getExecutionStatus()).isEqualTo(ExecutionStatus.SUCCESS);
-        assertThat(execution.getTriggerType()).isEqualTo(ExecutionTriggerType.MANUAL);
-        assertThat(execution.getResponsePayload()).contains("SUCCESS");
-        verify(interfaceExecutionStepRepository, times(3)).save(any(InterfaceExecutionStep.class));
-        verify(interfaceRetryTaskRepository, never()).save(any(InterfaceRetryTask.class));
-    }
-
-    @Test
-    void executeManualCreatesFailedExecutionAndRetryTaskWhenPayloadContainsFail() {
-        InterfaceDefinition definition = activeDefinition("IF_BATCH_POLICY_001");
-        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
-
-        InterfaceExecution execution = service.executeManual(1L, "please FAIL this mock", "admin");
-
-        assertThat(execution.getExecutionStatus()).isEqualTo(ExecutionStatus.FAILED);
-        assertThat(execution.getErrorCode()).isEqualTo("MOCK_EXECUTION_FAILED");
-        verify(interfaceRetryTaskRepository).save(any(InterfaceRetryTask.class));
-    }
-
-    @Test
-    void retryFailedExecutionCreatesRetryExecutionAndMarksTaskDone() {
-        InterfaceDefinition definition = activeDefinition("IF_BATCH_POLICY_001");
+    void retryFailedMqExecutionPublishesAndConsumesAgain() {
+        InterfaceDefinition definition = mqDefinition();
         InterfaceExecution original = InterfaceExecution.create(
                 "EXE-ORIGINAL",
                 definition,
                 null,
                 ExecutionTriggerType.MANUAL,
-                null,
+                "{\"policyNo\":\"POL-001\"}",
                 "admin"
         );
         ReflectionTestUtils.setField(original, "id", 10L);
         original.markRunning(LocalDateTime.now());
-        original.markFailed("MOCK_EXECUTION_FAILED", "first failure", "{}", LocalDateTime.now());
+        original.markFailed("MQ_CONSUME_ERROR", "first consumer failure", "{}", LocalDateTime.now());
         InterfaceRetryTask retryTask = InterfaceRetryTask.waitingFor(original, LocalDateTime.now());
 
         when(interfaceExecutionRepository.findDetailById(10L)).thenReturn(Optional.of(original));
         when(interfaceRetryTaskRepository.findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(10L, RetryStatus.WAITING))
                 .thenReturn(Optional.of(retryTask));
+        when(mqChannelConfigService.getActiveForExecution(definition)).thenReturn(config(definition));
 
         InterfaceExecution retryExecution = service.retryFailedExecution(10L, "admin");
 
         assertThat(retryExecution.getTriggerType()).isEqualTo(ExecutionTriggerType.RETRY);
         assertThat(retryExecution.getExecutionStatus()).isEqualTo(ExecutionStatus.SUCCESS);
-        assertThat(retryExecution.getRetrySourceExecution()).isEqualTo(original);
+        assertThat(retryExecution.getRequestMethod()).isEqualTo("PUBLISH_CONSUME");
+        assertThat(retryExecution.getRequestUrl()).isEqualTo("insurancehub.test.retry.events");
+        assertThat(retryExecution.getResponsePayload()).contains("\"consumeStatus\":\"SUCCESS\"");
         assertThat(retryTask.getRetryStatus()).isEqualTo(RetryStatus.DONE);
-        assertThat(retryTask.getRetryCount()).isEqualTo(1);
+        verify(interfaceExecutionStepRepository, times(4)).save(any(InterfaceExecutionStep.class));
     }
 
-    private InterfaceDefinition activeDefinition(String code) {
-        return InterfaceDefinition.create(
-                code,
-                "Policy status batch interface",
-                ProtocolType.BATCH,
+    private MqChannelConfig config(InterfaceDefinition definition) {
+        return MqChannelConfig.create(
+                definition,
+                MqBrokerType.EMBEDDED_ARTEMIS,
+                "insurancehub.test.retry.events",
+                "policy.event",
+                MqMessageType.TEXT,
+                "MQ-{executionNo}",
+                3000,
+                true
+        );
+    }
+
+    private InterfaceDefinition mqDefinition() {
+        InterfaceDefinition definition = InterfaceDefinition.create(
+                "IF_MQ_POLICY_001",
+                "Policy event outbound MQ interface",
+                ProtocolType.MQ,
                 InterfaceDirection.OUTBOUND,
                 InterfaceStatus.ACTIVE,
                 PartnerCompany.create("LIFEPLUS", "Life Plus Insurance", MasterStatus.ACTIVE, null),
                 InternalSystem.create("POLICY_CORE", "Policy Core System", "Insurance Platform Team", MasterStatus.ACTIVE, null),
                 null
         );
+        ReflectionTestUtils.setField(definition, "id", 1L);
+        return definition;
     }
 }
