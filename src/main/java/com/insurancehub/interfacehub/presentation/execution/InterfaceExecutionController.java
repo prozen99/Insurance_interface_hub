@@ -5,6 +5,7 @@ import com.insurancehub.interfacehub.application.execution.InterfaceExecutionSer
 import com.insurancehub.interfacehub.domain.ExecutionStatus;
 import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
+import com.insurancehub.protocol.mq.application.MqMessageHistoryService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,9 +22,14 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class InterfaceExecutionController {
 
     private final InterfaceExecutionService interfaceExecutionService;
+    private final MqMessageHistoryService mqMessageHistoryService;
 
-    public InterfaceExecutionController(InterfaceExecutionService interfaceExecutionService) {
+    public InterfaceExecutionController(
+            InterfaceExecutionService interfaceExecutionService,
+            MqMessageHistoryService mqMessageHistoryService
+    ) {
         this.interfaceExecutionService = interfaceExecutionService;
+        this.mqMessageHistoryService = mqMessageHistoryService;
     }
 
     @ModelAttribute("protocolOptions")
@@ -86,8 +92,12 @@ public class InterfaceExecutionController {
 
     private void addDetailModel(Long id, Model model) {
         model.addAttribute("activeNav", "executions");
-        model.addAttribute("execution", interfaceExecutionService.getDetail(id));
+        InterfaceExecution execution = interfaceExecutionService.getDetail(id);
+        model.addAttribute("execution", execution);
         model.addAttribute("steps", interfaceExecutionService.getSteps(id));
         model.addAttribute("retryTasks", interfaceExecutionService.getRetryTasks(id));
+        if (execution.getProtocolType() == ProtocolType.MQ) {
+            model.addAttribute("mqMessages", mqMessageHistoryService.findByExecutionId(id));
+        }
     }
 }

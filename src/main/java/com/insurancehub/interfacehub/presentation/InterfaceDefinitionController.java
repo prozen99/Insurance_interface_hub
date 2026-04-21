@@ -12,6 +12,8 @@ import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.presentation.form.InterfaceDefinitionForm;
 import com.insurancehub.interfacehub.presentation.form.ManualExecutionForm;
+import com.insurancehub.protocol.mq.application.MqChannelConfigService;
+import com.insurancehub.protocol.mq.domain.entity.MqChannelConfig;
 import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
 import com.insurancehub.protocol.rest.domain.entity.RestEndpointConfig;
 import com.insurancehub.protocol.soap.application.SoapEndpointConfigService;
@@ -39,6 +41,7 @@ public class InterfaceDefinitionController {
     private final InterfaceExecutionService interfaceExecutionService;
     private final RestEndpointConfigService restEndpointConfigService;
     private final SoapEndpointConfigService soapEndpointConfigService;
+    private final MqChannelConfigService mqChannelConfigService;
 
     public InterfaceDefinitionController(
             InterfaceDefinitionService interfaceDefinitionService,
@@ -46,7 +49,8 @@ public class InterfaceDefinitionController {
             InternalSystemService internalSystemService,
             InterfaceExecutionService interfaceExecutionService,
             RestEndpointConfigService restEndpointConfigService,
-            SoapEndpointConfigService soapEndpointConfigService
+            SoapEndpointConfigService soapEndpointConfigService,
+            MqChannelConfigService mqChannelConfigService
     ) {
         this.interfaceDefinitionService = interfaceDefinitionService;
         this.partnerCompanyService = partnerCompanyService;
@@ -54,6 +58,7 @@ public class InterfaceDefinitionController {
         this.interfaceExecutionService = interfaceExecutionService;
         this.restEndpointConfigService = restEndpointConfigService;
         this.soapEndpointConfigService = soapEndpointConfigService;
+        this.mqChannelConfigService = mqChannelConfigService;
     }
 
     @ModelAttribute("protocolOptions")
@@ -124,6 +129,9 @@ public class InterfaceDefinitionController {
         SoapEndpointConfig soapConfig = (SoapEndpointConfig) model.asMap().get("soapConfig");
         if (interfaceDefinition.getProtocolType() == ProtocolType.SOAP && soapConfig != null) {
             manualExecutionForm.setRequestPayload(soapConfig.getRequestTemplateXml());
+        }
+        if (interfaceDefinition.getProtocolType() == ProtocolType.MQ) {
+            manualExecutionForm.setRequestPayload(MqChannelConfigService.SAMPLE_PAYLOAD.trim());
         }
         model.addAttribute("manualExecutionForm", manualExecutionForm);
         return "admin/interfaces/detail";
@@ -219,6 +227,10 @@ public class InterfaceDefinitionController {
         }
         if (interfaceDefinition.getProtocolType() == ProtocolType.SOAP) {
             model.addAttribute("soapConfig", soapEndpointConfigService.findByInterfaceDefinitionId(id).orElse(null));
+        }
+        if (interfaceDefinition.getProtocolType() == ProtocolType.MQ) {
+            MqChannelConfig mqConfig = mqChannelConfigService.findByInterfaceDefinitionId(id).orElse(null);
+            model.addAttribute("mqConfig", mqConfig);
         }
         return interfaceDefinition;
     }

@@ -40,6 +40,9 @@
                 <a class="button"
                    th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}"
                    th:href="@{/admin/interfaces/{id}/soap-config(id=${interfaceDefinition.id})}">Configure SOAP</a>
+                <a class="button"
+                   th:if="${interfaceDefinition.protocolType.name() == 'MQ'}"
+                   th:href="@{/admin/interfaces/{id}/mq-config(id=${interfaceDefinition.id})}">Configure MQ</a>
                 <a class="button primary" th:href="@{/admin/interfaces/{id}/edit(id=${interfaceDefinition.id})}">Edit</a>
             </div>
         </div>
@@ -84,9 +87,10 @@
                 </div>
                 <div class="detail-item full">
                     <dt>Phase note</dt>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'REST'}">Phase 4 keeps REST on the real HTTP executor introduced in Phase 3.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">Phase 4 sends real SOAP XML requests through the configured SOAP endpoint.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP'}">Phase 4 keeps this protocol mock-driven while REST and SOAP are implemented as real integration paths.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'REST'}">Phase 5 keeps REST on the real HTTP executor introduced in Phase 3.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">Phase 5 keeps SOAP on the real XML executor introduced in Phase 4.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">Phase 5 publishes and consumes a real JMS message through the embedded local Artemis broker.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ'}">Phase 5 keeps this protocol mock-driven while REST, SOAP, and MQ are implemented as real integration paths.</dd>
                 </div>
             </dl>
         </section>
@@ -189,6 +193,53 @@
             </dl>
         </section>
 
+        <section class="panel spacing-bottom" th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">MQ settings</p>
+                    <h3>Channel configuration</h3>
+                </div>
+                <a class="button" th:href="@{/admin/interfaces/{id}/mq-config(id=${interfaceDefinition.id})}">Edit MQ config</a>
+            </div>
+            <div class="empty-state panel-body" th:if="${mqConfig == null}">
+                MQ channel settings are not configured yet.
+            </div>
+            <dl class="detail-grid" th:if="${mqConfig != null}">
+                <div class="detail-item">
+                    <dt>Broker type</dt>
+                    <dd th:text="${mqConfig.brokerType}">EMBEDDED_ARTEMIS</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Active</dt>
+                    <dd>
+                        <span class="status"
+                              th:classappend="${mqConfig.active} ? ' status-active' : ' status-inactive'"
+                              th:text="${mqConfig.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+                    </dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Destination</dt>
+                    <dd th:text="${mqConfig.destinationName}">insurancehub.demo.policy.events</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Routing key</dt>
+                    <dd th:text="${mqConfig.routingKey == null ? '-' : mqConfig.routingKey}">policy.event</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Message type</dt>
+                    <dd th:text="${mqConfig.messageType}">TEXT</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Timeout</dt>
+                    <dd th:text="${mqConfig.timeoutMillis + ' ms'}">5000 ms</dd>
+                </div>
+                <div class="detail-item full">
+                    <dt>Correlation key expression</dt>
+                    <dd th:text="${mqConfig.correlationKeyExpression == null ? 'MQ-{executionNo}' : mqConfig.correlationKeyExpression}">MQ-{executionNo}</dd>
+                </div>
+            </dl>
+        </section>
+
         <section class="panel spacing-bottom">
             <div class="panel-header">
                 <div>
@@ -207,14 +258,15 @@
                 <label>
                     Request payload
                     <textarea th:field="*{requestPayload}"
-                              th:placeholder="${interfaceDefinition.protocolType.name() == 'REST'} ? 'JSON request body sent to the configured REST endpoint. Include FAIL to trigger simulator failure.' : (${interfaceDefinition.protocolType.name() == 'SOAP'} ? 'SOAP envelope XML sent to the configured SOAP endpoint. Include FAIL to trigger a SOAP fault.' : 'Optional mock request payload. Include FAIL to simulate failure.')"></textarea>
+                              th:placeholder="${interfaceDefinition.protocolType.name() == 'REST'} ? 'JSON request body sent to the configured REST endpoint. Include FAIL to trigger simulator failure.' : (${interfaceDefinition.protocolType.name() == 'SOAP'} ? 'SOAP envelope XML sent to the configured SOAP endpoint. Include FAIL to trigger a SOAP fault.' : (${interfaceDefinition.protocolType.name() == 'MQ'} ? 'Text message payload sent to the configured MQ destination. Include FAIL to trigger consumer failure.' : 'Optional mock request payload. Include FAIL to simulate failure.'))"></textarea>
                     <span class="field-error" th:if="${#fields.hasErrors('requestPayload')}" th:errors="*{requestPayload}">Too long</span>
                 </label>
                 <div class="form-actions">
                     <button class="button primary" type="submit" th:disabled="${interfaceDefinition.status.name() != 'ACTIVE'}">Execute now</button>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'REST'}">REST calls the configured endpoint. The local simulator returns a controlled failure when the payload contains FAIL.</p>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">SOAP calls the configured endpoint. The local simulator returns a SOAP fault when the XML contains FAIL.</p>
-                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP'}">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
+                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">MQ publishes to the embedded local Artemis broker, then consumes the same message by correlation key. Payloads containing FAIL simulate consumer failure.</p>
+                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ'}">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
                 </div>
             </form>
         </section>

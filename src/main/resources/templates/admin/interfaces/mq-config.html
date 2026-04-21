@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'MQ config | ' + ${interfaceDefinition.interfaceCode}">MQ config</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">MQ channel configuration</p>
+            <h2 th:text="${interfaceDefinition.interfaceCode}">IF_MQ_POLICY_001</h2>
+            <p class="lead">Configure the local embedded Artemis destination, correlation key, timeout, and text message settings used by manual execution.</p>
+        </header>
+
+        <div class="toolbar">
+            <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Back to interface</a>
+        </div>
+
+        <section class="panel">
+            <form class="form-grid panel-body"
+                  th:action="@{/admin/interfaces/{id}/mq-config(id=${interfaceDefinition.id})}"
+                  th:object="${form}"
+                  method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" th:field="*{id}">
+
+                <label>
+                    Broker type
+                    <select th:field="*{brokerType}">
+                        <option th:each="brokerType : ${brokerTypeOptions}" th:value="${brokerType}" th:text="${brokerType}">EMBEDDED_ARTEMIS</option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('brokerType')}" th:errors="*{brokerType}">Required</span>
+                </label>
+
+                <label>
+                    Destination name
+                    <input type="text" th:field="*{destinationName}" placeholder="insurancehub.demo.policy.events">
+                    <span class="field-error" th:if="${#fields.hasErrors('destinationName')}" th:errors="*{destinationName}">Required</span>
+                </label>
+
+                <label>
+                    Routing key
+                    <input type="text" th:field="*{routingKey}" placeholder="policy.event">
+                    <span class="field-error" th:if="${#fields.hasErrors('routingKey')}" th:errors="*{routingKey}">Too long</span>
+                </label>
+
+                <label>
+                    Message type
+                    <select th:field="*{messageType}">
+                        <option th:each="messageType : ${messageTypeOptions}" th:value="${messageType}" th:text="${messageType}">TEXT</option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('messageType')}" th:errors="*{messageType}">Required</span>
+                </label>
+
+                <label>
+                    Correlation key expression
+                    <input type="text" th:field="*{correlationKeyExpression}" placeholder="MQ-{executionNo}">
+                    <span class="field-error" th:if="${#fields.hasErrors('correlationKeyExpression')}" th:errors="*{correlationKeyExpression}">Too long</span>
+                    <span class="help-text">Supported tokens: {executionNo}, {interfaceCode}. Use AUTO or leave blank for MQ-{executionNo}.</span>
+                </label>
+
+                <label>
+                    Timeout millis
+                    <input type="number" min="100" max="60000" step="100" th:field="*{timeoutMillis}">
+                    <span class="field-error" th:if="${#fields.hasErrors('timeoutMillis')}" th:errors="*{timeoutMillis}">Required</span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" th:field="*{active}">
+                    <span>Active for manual execution</span>
+                </label>
+
+                <div class="form-actions">
+                    <button class="button primary" type="submit">Save MQ config</button>
+                    <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>
