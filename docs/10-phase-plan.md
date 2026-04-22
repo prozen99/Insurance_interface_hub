@@ -47,38 +47,40 @@ Status: Complete
 - Local SOAP simulator API.
 - SOAP request XML, response XML, SOAPAction, HTTP status, latency, and fault visibility.
 - SOAP retry through the common execution engine.
-- REST regression path preserved.
 
 ## Phase 5 - Real MQ Integration
 
-Status: Complete in the current codebase
+Status: Complete
 
 - MQ channel configuration UI and validation.
 - Embedded in-vm Artemis broker for local no-Docker demos.
 - Real JMS text message publish and consume flow.
-- Correlation key generation and consume-by-correlation behavior.
 - MQ message history with separate publish and consume statuses.
-- MQ execution detail visibility for destination, message id, correlation key, metadata, payloads, latency, and errors.
 - MQ retry through the common execution engine.
-- REST and SOAP regression paths preserved.
+
+## Phase 6 - Real SFTP/FTP Integration
+
+Status: Complete in the current codebase
+
+- SFTP/FTP file-transfer configuration UI and validation.
+- Embedded local SFTP and FTP servers for no-Docker demos.
+- Real upload and download flows.
+- Safe project-local demo directories.
+- File transfer history with local path, remote path, size, checksum, latency, and errors.
+- Execution detail visibility for SFTP/FTP results.
+- Retry through the common execution engine.
+- REST, SOAP, and MQ regression paths preserved.
 
 Exit criteria:
 
 - `.\gradlew.bat build` succeeds.
 - App starts with the local profile.
 - Admin login works.
-- REST execution still works.
-- SOAP execution still works.
-- MQ config page is reachable from an MQ interface detail page.
-- Manual MQ execution publishes and consumes through the embedded broker.
-- Payload containing `FAIL` creates a failed MQ execution with publish success and consume failure visible.
-- Failed MQ execution can be retried.
-
-## Phase 6 - SFTP/FTP
-
-- Add file transfer configuration UI and validation.
-- Implement SFTP and FTP adapters.
-- Record file transfer history.
+- REST, SOAP, and MQ still work.
+- SFTP and FTP config pages are reachable.
+- Manual SFTP/FTP upload and download perform real local transfers.
+- Execution detail shows file transfer history.
+- Failed file-transfer execution can be retried.
 
 ## Phase 7 - Batch
 

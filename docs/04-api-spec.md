@@ -1,6 +1,6 @@
 # API Spec
 
-Phase 5 is still primarily a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local simulator endpoints. MQ is driven through admin page actions and an embedded in-vm broker, not a public HTTP broker API.
+Phase 6 is still primarily a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local REST/SOAP simulator endpoints. MQ, SFTP, and FTP are driven through admin page actions and embedded local infrastructure.
 
 ## Public/System Endpoints
 
@@ -12,28 +12,16 @@ Phase 5 is still primarily a server-rendered Thymeleaf admin console. JSON/XML e
 | GET | `/api/smoke` | Smoke JSON response |
 | GET | `/actuator/health` | Actuator health |
 
-## Local REST Simulator Endpoints
+## Simulator Endpoints
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/simulator/rest/premium/calculate` | Premium calculation demo target |
-| GET | `/simulator/rest/policy/{policyNo}` | Policy lookup demo target |
-| POST | `/simulator/rest/claim/register` | Claim registration demo target |
-
-## Local SOAP Simulator Endpoints
-
-Simulator endpoints consume and produce SOAP XML.
-
-| Method | Path | Purpose |
-| --- | --- | --- |
+| POST | `/simulator/rest/premium/calculate` | Premium calculation REST demo target |
+| GET | `/simulator/rest/policy/{policyNo}` | Policy lookup REST demo target |
+| POST | `/simulator/rest/claim/register` | Claim registration REST demo target |
 | POST | `/simulator/soap/policy-inquiry` | Policy inquiry SOAP demo target |
 | POST | `/simulator/soap/claim-status` | Claim status SOAP demo target |
 | POST | `/simulator/soap/premium-confirmation` | Premium confirmation SOAP demo target |
-
-Failure rule:
-
-- If request XML contains `FAIL`, the simulator returns HTTP 500 with a SOAP fault.
-- Otherwise it returns HTTP 200 with a SOAP success envelope.
 
 ## Admin Page Endpoints
 
@@ -51,36 +39,34 @@ All `/admin/**` endpoints require authentication.
 | POST | `/admin/interfaces/{id}/soap-config` | Save SOAP endpoint configuration |
 | GET | `/admin/interfaces/{id}/mq-config` | MQ channel configuration form |
 | POST | `/admin/interfaces/{id}/mq-config` | Save MQ channel configuration |
+| GET | `/admin/interfaces/{id}/file-transfer-config` | SFTP/FTP configuration form |
+| POST | `/admin/interfaces/{id}/file-transfer-config` | Save SFTP/FTP configuration |
 | GET | `/admin/executions` | Execution history list |
 | GET | `/admin/executions/failed` | Failed execution list |
-| GET | `/admin/executions/{id}` | Execution detail with protocol exchange data and MQ message history |
+| GET | `/admin/executions/{id}` | Execution detail with protocol-specific history |
 | POST | `/admin/executions/{id}/retry` | Retry a failed execution |
 
-## MQ Config Form Fields
+## File Transfer Config Fields
 
-- `brokerType`: required, currently `EMBEDDED_ARTEMIS`
-- `destinationName`: required, max 180 characters
-- `routingKey`: optional, max 180 characters
-- `messageType`: required, currently `TEXT`
-- `correlationKeyExpression`: optional, max 300 characters, supports `{executionNo}` and `{interfaceCode}`
+- `protocolType`: SFTP or FTP
+- `host`: local demo default `127.0.0.1`
+- `port`: default `10022` for SFTP, `10021` for FTP
+- `username`: local demo default `demo`
+- `secretReference`: local demo default `LOCAL_DEMO_FILE_TRANSFER_PASSWORD`
+- `baseRemotePath`: default `/inbox`
+- `localPath`: default `build/file-transfer-demo/local`
+- `fileNamePattern`: optional display/filter hint
+- `passiveMode`: FTP only
 - `timeoutMillis`: 100 to 60000
-- `active`: enables or disables this MQ config for execution
+- `active`: enables or disables execution
 
-## SOAP Config Form Fields
+## Manual File Transfer Fields
 
-- `endpointUrl`: required, starts with `http://` or `https://`, max 500 characters
-- `soapAction`: optional, max 300 characters
-- `operationName`: required, max 160 characters
-- `namespaceUri`: required, max 300 characters
-- `requestTemplateXml`: required, well-formed XML, max 12000 characters
-- `timeoutMillis`: 100 to 60000
-- `active`: enables or disables this SOAP config for execution
+- `transferDirection`: `UPLOAD` or `DOWNLOAD`
+- `localFileName`: simple file name only
+- `remoteFilePath`: absolute remote path such as `/inbox/sample-upload.txt`
 
-## Manual Execution Form Fields
-
-- `requestPayload`: optional, max 12000 characters
-
-For REST, `requestPayload` is sent as the HTTP request body for POST. For SOAP, it is sent as the SOAP XML envelope. For MQ, it is sent as the JMS text message body. For mock protocols, it is only used by the deterministic mock rule.
+The controller serializes these fields into the execution request payload so retry can repeat the same transfer.
 
 ## Response Standard For Future JSON APIs
 

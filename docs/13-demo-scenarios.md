@@ -5,13 +5,13 @@
 1. Open `README.md`.
 2. Explain the business goal.
 3. Show the phase roadmap.
-4. Show `com.insurancehub.interfacehub.application.execution`.
-5. Show `com.insurancehub.protocol.rest`, `com.insurancehub.protocol.soap`, and `com.insurancehub.protocol.mq`.
+4. Show the common execution engine.
+5. Show protocol packages for REST, SOAP, MQ, SFTP, and FTP.
 
 What this proves:
 
 - The project has clear business context.
-- REST, SOAP, and MQ are real protocol adapters behind the same common execution engine.
+- Five protocol paths are real while still sharing one execution engine.
 
 ## Scenario 2 - Login And Dashboard
 
@@ -25,98 +25,82 @@ What this proves:
 - DB-backed form login still works.
 - Dashboard shows execution metrics.
 
-## Scenario 3 - REST Regression
+## Scenario 3 - REST/SOAP/MQ Regression
 
-1. Open `IF_REST_POLICY_001`.
-2. Execute with the sample JSON payload.
-3. Review the execution detail.
-
-What this proves:
-
-- REST still works after SOAP and MQ were added.
-
-## Scenario 4 - SOAP Regression
-
-1. Open `IF_SOAP_POLICY_001`.
-2. Execute with the sample SOAP XML.
-3. Review the execution detail.
+1. Open `IF_REST_POLICY_001` and execute the sample payload.
+2. Open `IF_SOAP_POLICY_001` and execute the sample XML.
+3. Open `IF_MQ_POLICY_001` and execute the sample message.
 
 What this proves:
 
-- SOAP still works after MQ was added.
+- Phase 6 did not break existing real protocols.
 
-## Scenario 5 - MQ Configuration
+## Scenario 4 - SFTP Configuration
 
-1. Open `/admin/interfaces`.
-2. Open `IF_MQ_POLICY_001`.
-3. Review the MQ settings panel.
-4. Click Edit MQ config.
-5. Confirm broker type, destination, routing key, message type, correlation key expression, timeout, and active flag.
-
-What this proves:
-
-- MQ-specific configuration is visible and editable.
-- Protocol-specific setup remains separate from interface master data.
-
-## Scenario 6 - MQ Manual Success
-
-1. Open `IF_MQ_POLICY_001`.
-2. Keep the sample payload.
-3. Click Execute now.
-4. Review the execution detail.
+1. Open `IF_SFTP_POLICY_001`.
+2. Review the SFTP settings panel.
+3. Click Edit SFTP config.
+4. Confirm host, port, username, secret reference, paths, timeout, and active flag.
 
 What this proves:
 
-- Manual execution creates an execution record.
-- MQ execution publishes a real JMS message to the embedded broker.
-- MQ execution consumes the message by correlation key.
-- Destination, message id, correlation key, publish status, consume status, payload, and latency are persisted.
+- SFTP-specific settings are visible and editable.
 
-## Scenario 7 - MQ Consumer Failure
+## Scenario 5 - SFTP Upload And Download
 
-1. Open the MQ interface detail page.
-2. Add `FAIL` inside the payload.
-3. Click Execute now.
-4. Confirm FAILED status.
-5. Confirm MQ message history shows publish SUCCESS and consume FAILED.
+1. Open `IF_SFTP_POLICY_001`.
+2. Upload `sample-upload.txt` to `/inbox/sample-upload.txt`.
+3. Open execution detail and review file transfer history.
+4. Download `/outbox/sample-download.txt` as `sample-download.txt`.
+5. Confirm the downloaded file appears under `build/file-transfer-demo/local/download`.
 
 What this proves:
 
-- Failure handling can represent a successful producer and failed consumer separately.
-- Retry task creation still works.
+- SFTP uses a real local protocol client and embedded server.
+- File size, checksum, paths, latency, and status are persisted.
 
-## Scenario 8 - MQ Retry
+## Scenario 6 - FTP Upload And Download
 
-1. Open the failed MQ execution detail.
-2. Click Retry.
-3. Review the new retry execution.
-4. Return to the original failed execution and review retry task status.
+1. Open `IF_FTP_POLICY_001`.
+2. Upload `sample-upload.txt` to `/inbox/sample-upload.txt`.
+3. Download `/outbox/sample-download.txt` as `sample-download.txt`.
+4. Review execution details.
 
 What this proves:
 
-- Retry creates a new execution.
-- Retry source linkage is understandable.
-- MQ retry uses the same real executor path.
+- FTP uses a real local protocol client and embedded server.
+- FTP passive mode is configurable.
 
-## Scenario 9 - Remaining Mock Boundary
+## Scenario 7 - File Transfer Failure And Retry
 
-1. Create or open a BATCH, SFTP, or FTP interface.
+1. Open an SFTP or FTP interface.
+2. Enter a missing local file name such as `missing.txt`.
+3. Execute upload and confirm FAILED.
+4. Create `missing.txt` under `build/file-transfer-demo/local/input`.
+5. Open the failed execution detail.
+6. Click Retry.
+
+What this proves:
+
+- Failure handling and retry task creation work for file transfers.
+- Execution detail exposes the cause clearly.
+
+## Scenario 8 - Remaining Mock Boundary
+
+1. Create or open a BATCH interface.
 2. Execute with a normal payload.
 3. Execute with a payload containing `FAIL`.
 
 What this proves:
 
-- REST, SOAP, and MQ are real in Phase 5.
-- Other protocols remain safely mock-driven until their phases.
+- BATCH remains safely mock-driven until Phase 7.
 
-## Scenario 10 - Execution History
+## Scenario 9 - Execution History
 
 1. Open `/admin/executions`.
-2. Filter by FAILED.
-3. Filter by MQ.
-4. Open an execution detail.
+2. Filter by SFTP or FTP.
+3. Open an execution detail.
 
 What this proves:
 
-- Operators can navigate execution history.
-- Protocol result inspection is available from history.
+- Operators can inspect file transfers from the same execution history used by every protocol.

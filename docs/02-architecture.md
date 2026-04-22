@@ -2,22 +2,22 @@
 
 ## Architecture Style
 
-Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 5 keeps the common execution engine protocol-agnostic and replaces only the MQ strategy with a real local JMS executor. REST and SOAP stay real, while BATCH, SFTP, and FTP stay mock-driven.
+Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 6 keeps the common execution engine protocol-agnostic and replaces SFTP/FTP mock strategies with real file-transfer executors. REST, SOAP, and MQ stay real. BATCH remains mock-driven.
 
 ## Package Map
 
 | Package | Responsibility |
 | --- | --- |
 | `com.insurancehub.admin.*` | Admin login and dashboard |
-| `com.insurancehub.interfacehub.application` | Master data use cases |
 | `com.insurancehub.interfacehub.application.execution` | Common execution engine, executor contract, factory, result models |
 | `com.insurancehub.interfacehub.domain` | Interface, execution, retry, protocol, direction, and status model |
-| `com.insurancehub.interfacehub.infrastructure` | Interface and execution JPA repositories |
-| `com.insurancehub.interfacehub.presentation` | Thymeleaf CRUD and execution controllers |
 | `com.insurancehub.protocol.rest` | Real REST executor, REST config, and REST simulator |
 | `com.insurancehub.protocol.soap` | Real SOAP executor, SOAP config, and SOAP simulator |
 | `com.insurancehub.protocol.mq` | Real MQ executor, embedded broker config, MQ channel config, and message history |
-| `com.insurancehub.protocol.batch`, `sftp`, `ftp` | Mock executors until their real phases |
+| `com.insurancehub.protocol.filetransfer` | Shared SFTP/FTP config, execution, local demo server setup, and transfer history |
+| `com.insurancehub.protocol.sftp` | SFTP executor and SFTP client adapter |
+| `com.insurancehub.protocol.ftp` | FTP executor and FTP client adapter |
+| `com.insurancehub.protocol.batch` | Mock executor until Phase 7 |
 
 ## Execution Flow
 
@@ -26,51 +26,51 @@ flowchart TD
     Admin["Admin user"] --> Detail["Interface detail page"]
     Detail --> Execute["Manual execute"]
     Execute --> Engine["InterfaceExecutionService"]
-    Engine --> Record["Create InterfaceExecution"]
     Engine --> Factory["InterfaceExecutorFactory"]
     Factory --> Protocol{"Protocol type"}
     Protocol -->|REST| Rest["RestInterfaceExecutor"]
     Protocol -->|SOAP| Soap["SoapInterfaceExecutor"]
     Protocol -->|MQ| Mq["MqInterfaceExecutor"]
-    Protocol -->|Other| Mock["Mock executor"]
+    Protocol -->|SFTP| Sftp["SftpInterfaceExecutor"]
+    Protocol -->|FTP| Ftp["FtpInterfaceExecutor"]
+    Protocol -->|BATCH| Batch["BatchMockInterfaceExecutor"]
     Rest --> RestSimulator["Local REST simulator"]
     Soap --> SoapSimulator["Local SOAP simulator"]
-    Mq --> Broker["Embedded in-vm Artemis broker"]
-    Broker --> Consume["Local JMS consume by correlation key"]
-    RestSimulator --> Steps["Execution step logs"]
-    SoapSimulator --> Steps
-    Consume --> Steps
-    Mock --> Steps
-    Steps --> Result{"Success?"}
-    Result -->|Yes| Success["Mark execution SUCCESS"]
-    Result -->|No| Failure["Mark execution FAILED"]
-    Failure --> Retry["Create WAITING retry task"]
+    Mq --> Broker["Embedded Artemis broker"]
+    Sftp --> SftpServer["Embedded SFTP server"]
+    Ftp --> FtpServer["Embedded FTP server"]
+    RestSimulator --> Result["Execution result"]
+    SoapSimulator --> Result
+    Broker --> Result
+    SftpServer --> Result
+    FtpServer --> Result
+    Batch --> Result
+    Result --> History["Execution, step, retry, and protocol history"]
 ```
 
-## MQ Adapter Boundary
+## File Transfer Boundary
 
-`MqInterfaceExecutor` owns:
+`FileTransferExecutionService` owns:
 
-- active MQ channel config lookup
-- text payload selection
-- correlation key generation
-- publish to the configured local destination
-- consume from the same destination by `JMSCorrelationID`
-- publish/consume status and message history persistence
-- latency, message id, correlation key, and error capture
+- active SFTP/FTP configuration lookup
+- upload/download request payload parsing
+- safe local path resolution under the configured local directory
+- SFTP/FTP client selection
+- transfer history persistence
+- file size, checksum, content summary, latency, and error capture
 
-`LocalMqConfig` starts an embedded in-vm Artemis broker when `app.mq.embedded.enabled=true`. The broker is local to the app process and uses no Docker or external service.
+`LocalFileTransferServerConfig` starts embedded local SFTP and FTP servers when enabled. Runtime demo files are generated under `build/file-transfer-demo`.
 
-`InterfaceExecutionService` remains the orchestration layer and does not know JMS broker details.
+`InterfaceExecutionService` remains the orchestration layer and does not know protocol-specific file-transfer details.
 
 ## Retry Flow
 
-Retry still creates a new execution linked to the original failed execution. REST, SOAP, and MQ retries use their real executors. Mock protocols use their mock executors.
+Retry creates a new execution linked to the original failed execution. REST, SOAP, MQ, SFTP, and FTP retries use their real executors. BATCH uses the mock executor.
 
 ## Security Posture
 
-Spring Security form login is backed by the `admin_user` table. Passwords are stored as BCrypt hashes. `/admin/**` requires authentication. `/simulator/**` is permitted and CSRF-ignored so server-side REST and SOAP executors can call local simulator POST endpoints. MQ is internal to the application process in Phase 5 and has no public broker endpoint.
+Spring Security form login is backed by the `admin_user` table. Passwords are stored as BCrypt hashes. File-transfer demo credentials are local-only and referenced through `LOCAL_DEMO_FILE_TRANSFER_PASSWORD`; production secret storage is intentionally out of Phase 6.
 
 ## Database Ownership
 
-Flyway owns schema evolution. Phase 5 adds V6 for MQ channel settings, MQ message history, and local MQ demo seed data. Existing migrations are never edited after they are applied.
+Flyway owns schema evolution. Phase 6 adds V7 for file-transfer config extensions, file transfer history, and SFTP/FTP demo seed data. Existing migrations are never edited after they are applied.

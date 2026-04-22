@@ -7,7 +7,7 @@
 - Local MySQL 8.x
 - IntelliJ IDEA or PowerShell
 
-No Docker or external MQ broker is required for Phase 5.
+No Docker, external MQ broker, external SFTP server, or external FTP server is required for Phase 6.
 
 ## Database Setup
 
@@ -35,7 +35,7 @@ Optional:
 $env:INSURANCE_HUB_PORT="8080"
 ```
 
-If the port is changed, update REST and SOAP endpoint config URLs in the admin UI. MQ uses the embedded in-vm broker and does not depend on the HTTP port.
+If the HTTP port is changed, update REST and SOAP endpoint config URLs in the admin UI. MQ and file-transfer demo servers use separate local ports.
 
 ## Build
 
@@ -49,53 +49,46 @@ If the port is changed, update REST and SOAP endpoint config URLs in the admin U
 .\gradlew.bat bootRun --args='--spring.profiles.active=local'
 ```
 
-The embedded Artemis broker starts inside the app process by default through:
+Embedded local infrastructure starts inside the app process:
 
-```yaml
-app:
-  mq:
-    embedded:
-      enabled: true
-```
+- Artemis in-vm broker
+- SFTP server on `127.0.0.1:10022`
+- FTP server on `127.0.0.1:10021`
 
 ## Demo Login
 
 - Login ID: `admin`
 - Password: `admin123!`
 
-## Verify Phase 5
+## File Transfer Demo Directories
+
+Generated at runtime:
+
+- Upload source: `build/file-transfer-demo/local/input`
+- Download target: `build/file-transfer-demo/local/download`
+- SFTP remote root: `build/file-transfer-demo/remote/sftp`
+- FTP remote root: `build/file-transfer-demo/remote/ftp`
+
+Sample files:
+
+- Upload file: `sample-upload.txt`
+- Download remote path: `/outbox/sample-download.txt`
+
+## Verify Phase 6
 
 1. Open http://localhost:8080/login.
 2. Log in.
-3. Open http://localhost:8080/admin/interfaces.
-4. Open `IF_REST_POLICY_001` and run the REST success demo to confirm REST still works.
-5. Open `IF_SOAP_POLICY_001` and run the SOAP success demo to confirm SOAP still works.
-6. Open `IF_MQ_POLICY_001`.
-7. Confirm the MQ settings panel shows broker type `EMBEDDED_ARTEMIS` and destination `insurancehub.demo.policy.events`.
-8. Open Edit MQ config and confirm destination, routing key, correlation key expression, timeout, and active flag are editable.
-9. Return to the MQ interface detail page.
-10. Execute with the sample payload and confirm SUCCESS.
-11. Open execution detail and confirm destination, correlation key, publish metadata, consume metadata, message history, and latency are visible.
-12. Execute again with `FAIL` in the payload and confirm FAILED with publish SUCCESS and consume FAILED in the MQ message history.
-13. Open the failed execution detail and click Retry.
-
-## SOAP Simulator Smoke Check
-
-```powershell
-Invoke-WebRequest `
-  -Method Post `
-  -Uri http://localhost:8080/simulator/soap/policy-inquiry `
-  -ContentType "text/xml" `
-  -Headers @{"SOAPAction"="urn:PolicyInquiry"} `
-  -Body '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/"><soapenv:Body><PolicyInquiryRequest><policyNo>POL-001</policyNo></PolicyInquiryRequest></soapenv:Body></soapenv:Envelope>'
-```
-
-## MQ Local Notes
-
-- No external Artemis service should be started for the demo.
-- `/actuator/health` should not depend on a separately installed broker.
-- Use `IF_MQ_POLICY_001` to exercise publish/consume from the admin UI.
-- `FAIL` in the payload is the deterministic local consumer failure trigger.
+3. Open `/admin/interfaces`.
+4. Run one REST execution to confirm REST still works.
+5. Run one SOAP execution to confirm SOAP still works.
+6. Run one MQ execution to confirm MQ still works.
+7. Open `IF_SFTP_POLICY_001`.
+8. Confirm SFTP settings point to `127.0.0.1:10022`.
+9. Execute upload with `sample-upload.txt` and `/inbox/sample-upload.txt`.
+10. Execute download with `sample-download.txt` and `/outbox/sample-download.txt`.
+11. Open execution detail and confirm file transfer history is visible.
+12. Repeat the same flow for `IF_FTP_POLICY_001`.
+13. Trigger a failure with a missing local file name and retry the failed execution.
 
 ## Reset Local Database
 

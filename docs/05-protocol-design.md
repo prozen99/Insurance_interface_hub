@@ -1,82 +1,73 @@
 # Protocol Design
 
-## Phase 5 Purpose
+## Phase 6 Purpose
 
-Phase 5 proves MQ as the third real protocol path. REST remains real from Phase 3. SOAP remains real from Phase 4. BATCH, SFTP, and FTP remain mock-driven.
-
-## Executor Contract
-
-`InterfaceExecutor` defines:
-
-- `supports()`: returns the supported `ProtocolType`
-- `execute(ExecutionRequest request)`: returns `ExecutionResult`
-
-`InterfaceExecutorFactory` resolves the correct executor by protocol type.
+Phase 6 proves SFTP and FTP as real file-transfer protocol paths. REST remains real from Phase 3, SOAP from Phase 4, and MQ from Phase 5. BATCH remains mock-driven.
 
 ## Current Executors
 
-| Protocol | Executor | Phase 5 Behavior |
+| Protocol | Executor | Phase 6 Behavior |
 | --- | --- | --- |
-| REST | `RestInterfaceExecutor` | Sends real HTTP calls with Spring `RestClient` |
-| SOAP | `SoapInterfaceExecutor` | Sends real SOAP XML over HTTP to the local simulator |
-| MQ | `MqInterfaceExecutor` | Publishes and consumes a real JMS text message through embedded Artemis |
+| REST | `RestInterfaceExecutor` | Real HTTP calls with Spring `RestClient` |
+| SOAP | `SoapInterfaceExecutor` | Real SOAP XML over HTTP |
+| MQ | `MqInterfaceExecutor` | Real JMS text message publish/consume through embedded Artemis |
+| SFTP | `SftpInterfaceExecutor` | Real upload/download through embedded SFTP server |
+| FTP | `FtpInterfaceExecutor` | Real upload/download through embedded FTP server |
 | BATCH | `BatchMockInterfaceExecutor` | Mock |
-| SFTP | `SftpMockInterfaceExecutor` | Mock |
-| FTP | `FtpMockInterfaceExecutor` | Mock |
 
-## MQ Execution Rules
+## File Transfer Execution Rules
 
-`MqInterfaceExecutor`:
+`FileTransferExecutionService`:
 
-1. Loads active `MqChannelConfig`.
-2. Uses the manual request payload when provided; otherwise it uses the sample MQ payload.
-3. Resolves the correlation key from `correlationKeyExpression`.
-4. Creates `MqMessageHistory` with PENDING publish/consume statuses.
-5. Publishes a JMS text message to the configured destination.
-6. Consumes a message from the same destination by `JMSCorrelationID`.
-7. Marks publish and consume statuses separately.
-8. Captures destination, message id, correlation key, payloads, latency, and error details.
-9. Returns SUCCESS when publish and consumer processing both succeed.
-10. Returns FAILED when publish fails, consume times out, or consumed payload contains `FAIL`.
+1. Loads active SFTP/FTP configuration.
+2. Parses transfer direction, local file name, and remote path from the execution payload.
+3. Resolves local files under `build/file-transfer-demo/local`.
+4. Uses a protocol-specific client selected by `FileTransferClientFactory`.
+5. Executes upload or download.
+6. Records `FileTransferHistory`.
+7. Returns SUCCESS with size, checksum, summary, and latency.
+8. Returns FAILED for missing local files, path traversal attempts, connection errors, transfer errors, or missing remote files.
 
-## Local MQ Broker Rule
+## Local Demo Servers
 
-Phase 5 uses an embedded in-vm Artemis broker:
+SFTP:
 
-- Enabled by `app.mq.embedded.enabled=true`
-- Server id configured with `app.mq.embedded.server-id`
-- No Docker
-- No external broker install
-- No production credentials
+- Embedded Apache MINA SSHD server
+- Default host `127.0.0.1`
+- Default port `10022`
 
-The broker starts inside the Spring Boot process. This is intentionally demo-friendly and should be replaced by external broker configuration in a production phase.
+FTP:
 
-## SOAP Execution Rules
+- Embedded Apache FtpServer
+- Default host `127.0.0.1`
+- Default port `10021`
+- Passive mode enabled by default
 
-SOAP remains unchanged from Phase 4:
+Both servers use local demo directories under `build/file-transfer-demo` and a local-only credential reference. No Docker or external server install is required.
 
-- Sends HTTP POST with `Content-Type: text/xml`.
-- Sends `SOAPAction` when configured.
-- Treats HTTP 2xx without SOAP Fault as success.
-- Treats SOAP Faults, HTTP non-2xx, or client errors as failure.
+## Safe Local File Strategy
 
-## REST Rule
+- Upload reads from `build/file-transfer-demo/local/input`
+- Download writes to `build/file-transfer-demo/local/download`
+- SFTP remote root is `build/file-transfer-demo/remote/sftp`
+- FTP remote root is `build/file-transfer-demo/remote/ftp`
+- Local file names must be simple file names, not paths
+- Remote paths cannot contain `..`
 
-REST remains unchanged from Phase 3. It sends a real HTTP request to the configured endpoint and treats HTTP 2xx as success.
+## Existing Protocol Rules
 
-## Mock Rule For Remaining Protocols
-
-- If interface code contains `FAIL`, return failure.
-- If request payload contains `FAIL`, return failure.
-- Otherwise return success.
+- REST treats HTTP 2xx as success.
+- SOAP treats HTTP 2xx without SOAP Fault as success.
+- MQ distinguishes publish success from consume/process success.
+- BATCH uses the deterministic mock rule.
 
 ## Future Real Adapter Rules
 
-When SFTP/FTP and Batch are added:
+When Batch is added:
 
 - Keep `InterfaceExecutionService` as the orchestration layer.
-- Keep protocol-specific network details inside `com.insurancehub.protocol.*`.
+- Keep protocol-specific details inside `com.insurancehub.protocol.*`.
 - Record execution steps consistently.
 - Avoid logging secrets or sensitive payloads.
-- Use timeouts for all external calls.
+- Use timeouts for external calls.
 - Preserve retry behavior unless a protocol needs documented exceptions.

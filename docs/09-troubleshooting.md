@@ -381,3 +381,128 @@ Prevention:
 
 - Keep production broker setup out of Phase 5.
 - Document any future external broker migration as a separate phase decision.
+
+## Embedded SFTP Or FTP Port Conflict
+
+Symptom:
+
+- App startup fails during Phase 6.
+- Error mentions that port `10022` or `10021` is already in use.
+
+Cause:
+
+- The embedded local SFTP or FTP demo server tries to bind a port already used by another process.
+
+Fix:
+
+- Stop the process using the port, or change `app.file-transfer.sftp.port` / `app.file-transfer.ftp.port`.
+- If the port is changed, update the matching SFTP/FTP config row in the admin UI.
+
+Prevention:
+
+- Keep only one local app instance running during demos.
+- Use `Get-NetTCPConnection -LocalPort 10022` or `10021` before starting if startup fails.
+
+## SFTP Host Key Warning In Tests Or Logs
+
+Symptom:
+
+- Logs show an unverified SFTP host key warning.
+- File transfer still succeeds.
+
+Cause:
+
+- The local demo SFTP client allows unknown keys because the embedded server generates a project-local demo host key.
+
+Fix:
+
+- No fix is required for the local demo path.
+- For production, configure a known-hosts file or a pinned host key.
+
+Prevention:
+
+- Do not copy `allowUnknownKeys=true` into production SFTP configuration.
+- Keep the warning documented as local-demo-only behavior.
+
+## File Upload Fails Because Local File Is Missing
+
+Symptom:
+
+- Execution status is FAILED.
+- Error mentions that the local upload file does not exist.
+
+Cause:
+
+- Upload reads from `build/file-transfer-demo/local/input`, and the requested file name is not present there.
+
+Fix:
+
+- Use `sample-upload.txt`, or place a demo file in `build/file-transfer-demo/local/input`.
+
+Prevention:
+
+- Keep demo file names simple.
+- Avoid entering full local paths in the manual execution form.
+
+## File Download Fails Because Remote File Is Missing
+
+Symptom:
+
+- Execution status is FAILED.
+- Error mentions a transfer or read failure for the remote path.
+
+Cause:
+
+- Download reads from the embedded server remote root. The requested remote file path does not exist.
+
+Fix:
+
+- Use `/outbox/sample-download.txt` for a success demo.
+- For custom files, upload first or create the file under the correct remote demo directory.
+
+Prevention:
+
+- Document demo remote roots:
+  - SFTP: `build/file-transfer-demo/remote/sftp`
+  - FTP: `build/file-transfer-demo/remote/ftp`
+
+## FTP Passive Mode Issues
+
+Symptom:
+
+- FTP login succeeds but upload/download hangs or fails during data transfer.
+
+Cause:
+
+- FTP uses a separate data connection. Active/passive mode can matter even on localhost.
+
+Fix:
+
+- Keep passive mode enabled for the local demo.
+- Confirm local firewall or security software is not blocking loopback data ports.
+
+Prevention:
+
+- Keep FTP passive mode visible in the config UI.
+- Prefer SFTP for simpler production network posture unless FTP is explicitly required.
+
+## File Transfer Path Traversal Rejected
+
+Symptom:
+
+- Execution fails before opening SFTP/FTP connection.
+- Error mentions that local file name or remote path cannot contain traversal.
+
+Cause:
+
+- The local demo intentionally blocks `..`, absolute local paths, and nested local file paths.
+
+Fix:
+
+- Use a simple local file name such as `sample-upload.txt`.
+- Use an absolute remote path such as `/inbox/sample-upload.txt`.
+
+Prevention:
+
+- Keep local demo files under the project-local demo directory.
+- Do not expose arbitrary filesystem paths through the admin form.

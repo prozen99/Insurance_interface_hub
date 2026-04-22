@@ -1,30 +1,16 @@
 # Screen Spec
 
-Phase 5 uses Thymeleaf for the admin UI and adds visible MQ configuration, MQ publish/consume execution, and MQ message history inspection.
+Phase 6 uses Thymeleaf for the admin UI and adds SFTP/FTP configuration, manual file-transfer execution fields, and transfer history visibility.
 
 ## Common Layout
 
 Admin pages share:
 
 - Left navigation
-- Phase 5 product branding
+- Phase 6 product branding
 - Logout button
 - Flash success/error messages
 - Table-based enterprise admin layout
-
-## Dashboard
-
-Path: `/admin`
-
-Metrics:
-
-- Total interfaces
-- Active interfaces
-- Today success
-- Today failure
-- Pending retries
-- Partner companies
-- Internal systems
 
 ## Interface Detail
 
@@ -33,63 +19,59 @@ Path: `/admin/interfaces/{id}`
 Sections:
 
 - Interface summary
-- REST settings panel for REST interfaces
-- SOAP settings panel for SOAP interfaces
-- MQ settings panel for MQ interfaces
+- Protocol-specific settings panel
 - Manual execution form
 - Recent execution table
 
-MQ interface behavior:
+SFTP/FTP interface behavior:
 
-- Shows broker type, destination, routing key, message type, correlation key expression, timeout, and active status.
-- Provides an Edit MQ config button.
-- Preloads a sample JSON text message into the manual execution form.
-- Payload containing `FAIL` publishes successfully but fails during local consumer processing.
+- Shows host, port, username, secret reference, base remote path, local path, timeout, active flag, and FTP passive mode.
+- Provides an Edit SFTP/FTP config button.
+- Shows file-transfer fields instead of the generic payload textarea.
+- Upload reads from local `input`; download writes to local `download`.
 
-## MQ Config Form
+## File Transfer Config Form
 
-Path: `/admin/interfaces/{id}/mq-config`
+Path: `/admin/interfaces/{id}/file-transfer-config`
 
 Fields:
 
-- Broker type
-- Destination name
-- Routing key
-- Message type
-- Correlation key expression
+- Host
+- Port
+- Username
+- Secret reference
+- Base remote path
+- Local path
+- File name pattern
 - Timeout millis
+- FTP passive mode
 - Active for manual execution
 
 Validation:
 
-- Destination name is required.
-- Broker type and message type are required.
+- Host, port, username, secret reference, base remote path, and local path are required.
+- Base remote path must start with `/`.
 - Timeout must be between 100 and 60000 ms.
-- Optional text fields are length-limited.
 
-## SOAP Config Form
-
-Path: `/admin/interfaces/{id}/soap-config`
+## Manual File Transfer Execution
 
 Fields:
 
-- Endpoint URL
-- SOAPAction
-- Operation name
-- Namespace URI
-- Timeout millis
-- Request template XML
-- Active for manual execution
+- Transfer direction: `UPLOAD` or `DOWNLOAD`
+- Local file name
+- Remote file path
 
-## Execution History
+Default upload demo:
 
-Path: `/admin/executions`
+- Direction: `UPLOAD`
+- Local file: `sample-upload.txt`
+- Remote path: `/inbox/sample-upload.txt`
 
-Filters:
+Default download demo:
 
-- Keyword
-- Protocol
-- Status
+- Direction: `DOWNLOAD`
+- Local file: `sample-download.txt`
+- Remote path: `/outbox/sample-download.txt`
 
 ## Execution Detail
 
@@ -98,24 +80,23 @@ Path: `/admin/executions/{id}`
 Sections:
 
 - Execution summary
-- REST, SOAP, or MQ exchange details when available
-- MQ message history section for MQ executions
+- Protocol exchange details
+- File transfer history for SFTP/FTP executions
+- MQ message history for MQ executions
 - Step logs
 - Request payload
 - Response payload
 - Retry tasks
 
-MQ exchange details:
+File transfer detail shows:
 
-- Destination
-- Flow name
-- Correlation key
-- Publish metadata
-- Consume metadata
+- Protocol
+- Direction
+- Local file name and path
+- Remote file path
+- Transfer status
+- File size
 - Latency
-- Message id
-- Publish status
-- Consume status
-- Error message when failed
+- Error message
 
 Failed executions show a retry button.
