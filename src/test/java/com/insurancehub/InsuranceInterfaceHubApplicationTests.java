@@ -7,6 +7,8 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutio
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InternalSystemRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.PartnerCompanyRepository;
+import com.insurancehub.protocol.filetransfer.infrastructure.repository.FileTransferConfigRepository;
+import com.insurancehub.protocol.filetransfer.infrastructure.repository.FileTransferHistoryRepository;
 import com.insurancehub.protocol.mq.infrastructure.repository.MqChannelConfigRepository;
 import com.insurancehub.protocol.mq.infrastructure.repository.MqMessageHistoryRepository;
 import com.insurancehub.protocol.rest.infrastructure.repository.RestEndpointConfigRepository;
@@ -19,7 +21,9 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
         "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
                 + "org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration,"
                 + "org.springframework.boot.autoconfigure.flyway.FlywayAutoConfiguration,"
-                + "org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration"
+                + "org.springframework.boot.autoconfigure.batch.BatchAutoConfiguration",
+        "app.file-transfer.sftp.enabled=false",
+        "app.file-transfer.ftp.enabled=false"
 })
 class InsuranceInterfaceHubApplicationTests {
 
@@ -55,6 +59,12 @@ class InsuranceInterfaceHubApplicationTests {
 
     @MockitoBean
     private MqMessageHistoryRepository mqMessageHistoryRepository;
+
+    @MockitoBean
+    private FileTransferConfigRepository fileTransferConfigRepository;
+
+    @MockitoBean
+    private FileTransferHistoryRepository fileTransferHistoryRepository;
 
     @Test
     void contextLoads() {

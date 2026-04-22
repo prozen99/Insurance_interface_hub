@@ -17,6 +17,7 @@ import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.interfacehub.domain.entity.InternalSystem;
 import com.insurancehub.interfacehub.domain.entity.PartnerCompany;
+import com.insurancehub.protocol.filetransfer.application.FileTransferHistoryService;
 import com.insurancehub.protocol.mq.application.MqMessageHistoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +40,9 @@ class InterfaceExecutionControllerTest {
 
     @MockitoBean
     private MqMessageHistoryService mqMessageHistoryService;
+
+    @MockitoBean
+    private FileTransferHistoryService fileTransferHistoryService;
 
     @Test
     @WithMockUser(username = "admin")

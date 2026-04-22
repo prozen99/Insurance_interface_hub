@@ -20,6 +20,8 @@ import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.interfacehub.domain.entity.InternalSystem;
 import com.insurancehub.interfacehub.domain.entity.PartnerCompany;
+import com.insurancehub.protocol.filetransfer.application.FileTransferConfigService;
+import com.insurancehub.protocol.filetransfer.application.FileTransferPayloadCodec;
 import com.insurancehub.protocol.mq.application.MqChannelConfigService;
 import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
 import com.insurancehub.protocol.soap.application.SoapEndpointConfigService;
@@ -60,6 +62,12 @@ class InterfaceDefinitionControllerTest {
     @MockitoBean
     private MqChannelConfigService mqChannelConfigService;
 
+    @MockitoBean
+    private FileTransferConfigService fileTransferConfigService;
+
+    @MockitoBean
+    private FileTransferPayloadCodec fileTransferPayloadCodec;
+
     @Test
     @WithMockUser(username = "admin")
     void manualExecutionRedirectsToExecutionDetail() throws Exception {
@@ -73,6 +81,7 @@ class InterfaceDefinitionControllerTest {
                 "admin"
         );
         ReflectionTestUtils.setField(execution, "id", 55L);
+        when(interfaceDefinitionService.getDetail(1L)).thenReturn(definition);
         when(interfaceExecutionService.executeManual(eq(1L), eq("{}"), anyString())).thenReturn(execution);
 
         mockMvc.perform(post("/admin/interfaces/1/execute")
