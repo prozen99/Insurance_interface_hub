@@ -1,6 +1,6 @@
 # API Spec
 
-Phase 7 is still primarily a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local REST/SOAP simulator endpoints. MQ, SFTP, FTP, and BATCH are driven through admin page actions and local in-process infrastructure.
+Phase 8 remains a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local REST/SOAP simulator endpoints. Monitoring views are authenticated admin pages backed by read-only aggregation services.
 
 ## Public/System Endpoints
 
@@ -29,7 +29,14 @@ All `/admin/**` endpoints require authentication.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| GET | `/admin` | Dashboard with execution metrics |
+| GET | `/admin` | Operations dashboard with execution, retry, protocol, MQ, file-transfer, and batch summaries |
+| GET | `/admin/monitoring` | Monitoring overview |
+| GET | `/admin/monitoring/failures` | Failure-focused monitoring view |
+| GET | `/admin/monitoring/retries` | Retry queue and retry activity view |
+| GET | `/admin/monitoring/protocols` | Protocol health and 7-day trend view |
+| GET | `/admin/monitoring/files` | File transfer monitoring view |
+| GET | `/admin/monitoring/mq` | MQ publish/consume monitoring view |
+| GET | `/admin/monitoring/batch` | Batch monitoring view |
 | GET | `/admin/interfaces` | Interface definition list |
 | GET | `/admin/interfaces/{id}` | Interface detail with execution form and protocol settings |
 | POST | `/admin/interfaces/{id}/execute` | Run manual execution through the common engine |
@@ -43,7 +50,7 @@ All `/admin/**` endpoints require authentication.
 | POST | `/admin/interfaces/{id}/file-transfer-config` | Save SFTP/FTP configuration |
 | GET | `/admin/interfaces/{id}/batch-config` | Batch job configuration form |
 | POST | `/admin/interfaces/{id}/batch-config` | Save Batch job configuration |
-| GET | `/admin/executions` | Execution history list |
+| GET | `/admin/executions` | Execution history list with keyword, protocol, status, trigger, and date filters |
 | GET | `/admin/executions/failed` | Failed execution list |
 | GET | `/admin/executions/{id}` | Execution detail with protocol-specific history |
 | POST | `/admin/executions/{id}/retry` | Retry a failed execution |
@@ -70,3 +77,14 @@ Manual batch execution uses the generic `requestPayload` field as JSON:
 ```
 
 Set `forceFail` to `true`, or include `FAIL`, to trigger a controlled failed batch run.
+
+## Monitoring Query Parameters
+
+`/admin/executions` supports:
+
+- `keyword`: execution number, interface code, or interface name
+- `protocolType`: `REST`, `SOAP`, `MQ`, `SFTP`, `FTP`, `BATCH`
+- `executionStatus`: `PENDING`, `RUNNING`, `SUCCESS`, `FAILED`
+- `triggerType`: `MANUAL`, `RETRY`, `SCHEDULED`
+- `startedFrom`: ISO date, inclusive
+- `startedTo`: ISO date, inclusive at the UI level and converted to an exclusive next-day bound internally

@@ -19,11 +19,12 @@ What this proves:
 2. Open `/login`.
 3. Log in with `admin` / `admin123!`.
 4. Open `/admin`.
+5. Point out primary metrics, quick links, 7-day trend, protocol cards, top failures, recent executions, and pending retries.
 
 What this proves:
 
 - DB-backed form login still works.
-- Dashboard shows execution metrics.
+- Dashboard shows an operations-center overview.
 
 ## Scenario 3 - Existing Protocol Regression
 
@@ -35,7 +36,7 @@ What this proves:
 
 What this proves:
 
-- Phase 7 did not break existing real protocols.
+- Phase 8 did not break existing real protocols.
 
 ## Scenario 4 - Batch Configuration
 
@@ -90,9 +91,27 @@ What this proves:
 
 1. Open `/admin/executions`.
 2. Filter by BATCH.
-3. Open a Batch execution detail.
-4. Compare it with REST, SOAP, MQ, SFTP, or FTP execution details.
+3. Filter by `MANUAL`, `RETRY`, or `SCHEDULED`.
+4. Use a date range filter.
+5. Open a Batch execution detail.
+6. Compare it with REST, SOAP, MQ, SFTP, or FTP execution details.
 
 What this proves:
 
 - Operators can inspect every protocol through one consistent execution history.
+- Operators can narrow the list quickly during incident review.
+
+## Scenario 9 - Monitoring Pages
+
+1. Open `/admin/monitoring`.
+2. Open `/admin/monitoring/failures`.
+3. Open `/admin/monitoring/retries`.
+4. Open `/admin/monitoring/protocols`.
+5. Open `/admin/monitoring/files`.
+6. Open `/admin/monitoring/mq`.
+7. Open `/admin/monitoring/batch`.
+
+What this proves:
+
+- Operators can move from broad operational status to focused protocol and incident views.
+- Monitoring is unified without adding a separate frontend stack.

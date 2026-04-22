@@ -1,122 +1,118 @@
 # Screen Spec
 
-Phase 7 uses Thymeleaf for the admin UI and adds Batch configuration, manual batch execution, batch run history, and batch result visibility.
+Phase 8 uses Thymeleaf for a demo-ready operations console. It keeps the Phase 7 CRUD, execution, protocol configuration, and batch screens while adding monitoring navigation and summary pages.
 
 ## Common Layout
 
 Admin pages share:
 
 - Left navigation
-- Phase 7 product branding
+- Phase 8 product branding
+- Dashboard, Monitoring, Interfaces, Executions, Batch Runs, Partners, and Internal Systems links
 - Logout button
 - Flash success/error messages
 - Table-based enterprise admin layout
-- Batch Runs navigation item
+- Consistent status badges for execution, retry, transfer, MQ, and batch statuses
 
-## Interface Detail
+## Dashboard
 
-Path: `/admin/interfaces/{id}`
-
-Sections:
-
-- Interface summary
-- Protocol-specific settings panel
-- Manual execution form
-- Recent execution table
-
-Batch interface behavior:
-
-- Shows job type, job name, cron expression, schedule enabled flag, retryable flag, timeout, active flag, and parameter template JSON.
-- Provides an Edit Batch config button.
-- Uses the generic request payload textarea for job parameters.
-- Defaults to the configured parameter template.
-
-## Batch Config Form
-
-Path: `/admin/interfaces/{id}/batch-config`
-
-Fields:
-
-- Job type
-- Spring Batch job name
-- Cron expression
-- Timeout millis
-- Max parallel count
-- Schedule enabled
-- Retryable
-- Active for manual execution
-- Parameter template JSON
-
-Validation:
-
-- Job type and job name are required.
-- Parameter template must be valid JSON.
-- Timeout must be between 1000 and 3600000 ms.
-- Phase 7 keeps max parallel count at 1.
-
-## Manual Batch Execution
-
-Payload example:
-
-```json
-{"businessDate":"TODAY","forceFail":false}
-```
-
-Failure demo:
-
-```json
-{"businessDate":"TODAY","forceFail":true}
-```
-
-## Execution Detail
-
-Path: `/admin/executions/{id}`
+Path: `/admin`
 
 Sections:
 
-- Execution summary
-- Protocol exchange details
-- Batch run history for BATCH executions
-- File transfer history for SFTP/FTP executions
-- MQ message history for MQ executions
-- Step logs
-- Request payload
-- Response payload
-- Retry tasks
+- Primary operational metrics
+- Quick links for failures, retries, protocol health, and execution history
+- 7-day execution trend
+- Top failed interfaces
+- Protocol cards for REST, SOAP, MQ, BATCH, SFTP, and FTP
+- Recent executions
+- Pending retry tasks
+- File transfer, MQ, batch, and actuator health summary cards
 
-Batch detail shows:
+## Monitoring Overview
 
-- Job name
-- Job type
-- Batch status
-- Read/write/skip counts
-- Latency
-- Output summary
-- Error message
-- Link to the Batch Run detail page
+Path: `/admin/monitoring`
 
-## Batch Run History
+Purpose:
 
-Path: `/admin/batch-runs`
+- Give operators a compact operational snapshot.
+- Link to specialized monitoring views.
+- Reuse the same read-only monitoring summaries as the dashboard.
 
-Shows recent batch runs with:
+## Failure Monitoring
 
-- Job name and type
-- Interface code
-- Status
-- Read/write/skip counts
-- Start time
-- Link to execution detail
-
-## Batch Run Detail
-
-Path: `/admin/batch-runs/{id}`
+Path: `/admin/monitoring/failures`
 
 Shows:
 
-- Run summary
-- Spring Batch job execution id
-- Exit code
-- Job parameters
-- Output summary
-- Step-level read/write/skip/commit/rollback counts
+- Top failed interfaces in the last 7 days
+- Recent failed executions
+- Links to interface detail and execution detail
+
+## Retry Monitoring
+
+Path: `/admin/monitoring/retries`
+
+Shows:
+
+- Pending retry count
+- New waiting retries today
+- Retry tasks completed in the last 7 days
+- Waiting retry task table
+- Recent retry task table
+
+## Protocol Monitoring
+
+Path: `/admin/monitoring/protocols`
+
+Shows:
+
+- Total and active interface count by protocol
+- Today success and failure count by protocol
+- Last 7-day execution volume by protocol
+- Last 7-day daily trend
+
+## File Transfer Monitoring
+
+Path: `/admin/monitoring/files`
+
+Shows:
+
+- Today transfer total, success, and failure counts
+- Recent SFTP/FTP transfer history
+- Direction, status, file name, remote path, latency, and linked execution detail
+
+## MQ Monitoring
+
+Path: `/admin/monitoring/mq`
+
+Shows:
+
+- Today publish success/failure counts
+- Today consume success/failure counts
+- Recent message destination, correlation key, publish status, consume status, latency, and linked execution detail
+
+## Batch Monitoring
+
+Path: `/admin/monitoring/batch`
+
+Shows:
+
+- Today batch total, completed, failed, and running counts
+- Recent batch runs with read/write/skip counts
+- Links to batch run detail and unified execution detail
+
+## Execution History
+
+Path: `/admin/executions`
+
+Filters:
+
+- Keyword
+- Protocol type
+- Execution status
+- Trigger type
+- Started from date
+- Started to date
+
+The list links to execution detail pages where protocol request/response, step logs, retry tasks, MQ messages, file transfers, and batch runs remain visible.

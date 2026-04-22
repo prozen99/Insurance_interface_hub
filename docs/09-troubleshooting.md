@@ -629,3 +629,45 @@ Prevention:
 
 - Add regression tests that capture launched Spring Batch parameters.
 - Keep demo failure rules narrow enough that control field names cannot trigger them accidentally.
+
+## Monitoring Page Fails In MVC Tests Because CSRF Is Missing
+
+Symptom:
+
+- A monitoring controller MVC test fails while parsing the shared sidebar fragment.
+- The error mentions `_csrf.parameterName` on a null object.
+
+Cause:
+
+- Some MVC tests disable Spring Security filters, so the request does not contain a CSRF token.
+- The shared sidebar always tried to render the logout form hidden CSRF input.
+
+Fix:
+
+- Render the hidden CSRF input only when `_csrf` exists.
+- Keep the logout form unchanged for real authenticated browser sessions where Spring Security supplies the token.
+
+Prevention:
+
+- Shared Thymeleaf fragments should tolerate test contexts with filters disabled.
+- Add controller tests for new admin pages when adding navigation fragments.
+
+## Dashboard Aggregation Load Concerns
+
+Symptom:
+
+- Dashboard pages may become slower if execution history grows large.
+
+Cause:
+
+- Phase 8 summaries are derived from operational tables at request time.
+- The current implementation is intentionally simple for a portfolio demo.
+
+Fix:
+
+- Keep time windows bounded, such as today and last 7 days.
+- Use indexed columns such as protocol, status, and started time.
+
+Prevention:
+
+- For production, introduce rollup tables, scheduled metric snapshots, or an external observability store before execution volume grows significantly.

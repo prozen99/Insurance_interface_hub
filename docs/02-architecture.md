@@ -2,7 +2,7 @@
 
 ## Architecture Style
 
-Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 7 completes the real protocol set by replacing the BATCH mock path with Spring Batch jobs while keeping REST, SOAP, MQ, SFTP, and FTP unchanged.
+Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 8 adds a read-only monitoring layer over the execution, retry, MQ, file-transfer, and batch history already collected by earlier phases.
 
 The common execution engine now creates and commits an `interface_execution` row before invoking a protocol executor, then records the result afterward. This avoids holding a database transaction open while calling HTTP, SOAP, MQ, file-transfer, or Spring Batch infrastructure.
 
@@ -10,7 +10,8 @@ The common execution engine now creates and commits an `interface_execution` row
 
 | Package | Responsibility |
 | --- | --- |
-| `com.insurancehub.admin.*` | Admin login and dashboard |
+| `com.insurancehub.admin.*` | Admin login and dashboard entry point |
+| `com.insurancehub.monitoring.*` | Operations dashboard, monitoring summaries, and monitoring page controllers |
 | `com.insurancehub.interfacehub.application.execution` | Common execution engine, executor contract, factory, result models |
 | `com.insurancehub.interfacehub.domain` | Interface, execution, retry, protocol, direction, and status model |
 | `com.insurancehub.protocol.rest` | Real REST executor, REST config, and REST simulator |
@@ -20,6 +21,22 @@ The common execution engine now creates and commits an `interface_execution` row
 | `com.insurancehub.protocol.sftp` | SFTP executor and SFTP client adapter |
 | `com.insurancehub.protocol.ftp` | FTP executor and FTP client adapter |
 | `com.insurancehub.protocol.batch` | Spring Batch executor, job config, scheduler, jobs, and run history |
+
+## Monitoring Boundary
+
+`OperationsMonitoringService` owns dashboard aggregation. It reads from existing repositories and does not execute protocols or mutate operational state.
+
+It aggregates:
+
+- active and total interface counts
+- today success/failure counts
+- pending and completed retry counts
+- 7-day execution trends
+- top failed interfaces
+- protocol summaries for REST, SOAP, MQ, SFTP, FTP, and BATCH
+- MQ message, file transfer, and batch run summaries
+
+The monitoring package depends on protocol history repositories for read models only. Protocol modules still own their execution, configuration, and persistence rules.
 
 ## Execution Flow
 
@@ -71,4 +88,4 @@ Retry creates a new execution linked to the original failed execution. REST, SOA
 
 ## Database Ownership
 
-Flyway owns schema evolution. Phase 7 adds V8 for batch config extensions, Spring Batch metadata tables, batch run history, batch step history, and demo batch seed data. Existing migrations are never edited after they are applied.
+Flyway owns schema evolution. Phase 8 does not add schema because dashboard summaries are derived from existing operational tables. Existing migrations are never edited after they are applied.

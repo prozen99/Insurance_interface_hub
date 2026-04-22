@@ -7,7 +7,7 @@
 - Local MySQL 8.x
 - IntelliJ IDEA or PowerShell
 
-No Docker, external MQ broker, external SFTP server, external FTP server, or external scheduler is required for Phase 7.
+No Docker, external MQ broker, external SFTP server, external FTP server, external scheduler, or external monitoring stack is required for Phase 8.
 
 ## Database Setup
 
@@ -99,7 +99,7 @@ Generated at runtime:
 - SFTP remote root: `build/file-transfer-demo/remote/sftp`
 - FTP remote root: `build/file-transfer-demo/remote/ftp`
 
-## Verify Phase 7
+## Verify Phase 8
 
 1. Open http://localhost:8080/login.
 2. Log in.
@@ -114,6 +114,11 @@ Generated at runtime:
 11. Open execution detail and confirm batch run history is visible.
 12. Open `/admin/batch-runs`.
 13. Trigger a batch failure with `{"forceFail":true}` and retry the failed execution.
+14. Open `/admin`.
+15. Confirm dashboard cards, protocol summaries, recent executions, pending retries, and top failures are visible.
+16. Open `/admin/monitoring`.
+17. Open `/admin/monitoring/failures`, `/admin/monitoring/retries`, `/admin/monitoring/protocols`, `/admin/monitoring/files`, `/admin/monitoring/mq`, and `/admin/monitoring/batch`.
+18. Open `/admin/executions` and verify filters by protocol, status, trigger, and date range.
 
 ## Reset Local Database
 

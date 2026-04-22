@@ -1,31 +1,33 @@
 # Insurance Interface Hub
 
-Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
+Korean title: &#48372;&#54744;&#49324; &#44552;&#50997; IT &#51064;&#53552;&#54168;&#51060;&#49828; &#53685;&#54633;&#44288;&#47532;&#49884;&#49828;&#53596;
 
-Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 7 adds real Spring Batch execution. REST, SOAP, MQ, SFTP, FTP, and BATCH now execute through local demo infrastructure and share one common execution history.
+Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across REST, SOAP, MQ, SFTP, FTP, and BATCH protocols. Phase 8 turns the functional admin console into a demo-ready operations center with dashboard metrics, monitoring views, failure focus, retry visibility, and protocol-specific summaries.
 
 ## Current Phase
 
-Phase 7 - Real Batch integration, manual and scheduled job execution, and admin batch visibility
+Phase 8 - Monitoring dashboard, operational visibility, metrics views, and demo-ready UI polish
 
 Implemented:
 
 - DB-backed Spring Security form login
 - Partner company, internal system, and interface definition CRUD
-- Common execution engine, execution history, step logs, retry tasks, and dashboard metrics
-- Real REST, SOAP, MQ, SFTP, FTP, and BATCH execution paths
+- Common execution engine, execution history, step logs, retry tasks, and protocol-specific result capture
+- Real REST, SOAP, MQ, SFTP, FTP, and BATCH execution paths through local demo infrastructure
 - Embedded in-vm Artemis broker for MQ
 - Embedded local SFTP and FTP demo servers without Docker
 - Real Spring Batch jobs for interface settlement summary and failed retry aggregation
 - Protocol-specific configuration UI for REST, SOAP, MQ, SFTP/FTP, and Batch
-- File transfer history and batch run history
-- Retry flow for failed executions across all supported protocols
+- File transfer history, MQ message history, and batch run history
+- Operations dashboard with today metrics, protocol summaries, 7-day trend, top failed interfaces, pending retries, and quick links
+- Monitoring pages for failures, retries, protocol health, MQ, file transfers, and batch runs
 
 Still intentionally out of scope:
 
 - Production credential vaulting
 - External MQ broker topology and durable production queues
 - Production batch calendars, distributed locks, partitioning, and remote scheduling
+- Production observability stack such as Prometheus, Grafana, tracing, alert delivery, and SLO management
 
 ## Demo Interfaces
 
@@ -51,7 +53,7 @@ Manual batch parameter sample:
 {"businessDate":"TODAY","forceFail":false}
 ```
 
-Set `forceFail` to `true`, or include `FAIL` in the manual payload, to demonstrate a controlled batch failure and retry.
+Set `forceFail` to `true`, or include `FAIL` in a payload value, to demonstrate a controlled batch failure and retry.
 
 ## Supported Protocol Classification
 
@@ -79,17 +81,7 @@ Set `forceFail` to `true`, or include `FAIL` in the manual payload, to demonstra
 
 ## Local Run Guide
 
-Create a local database and user:
-
-```sql
-create database if not exists insurance_hub character set utf8mb4 collate utf8mb4_0900_ai_ci;
-create user if not exists 'insurance_hub_app'@'localhost' identified by 'change-me';
-alter user 'insurance_hub_app'@'localhost' identified by 'change-me';
-grant all privileges on insurance_hub.* to 'insurance_hub_app'@'localhost';
-flush privileges;
-```
-
-Set environment variables:
+Keep local DB credentials outside source control and provide them with environment variables or IntelliJ Run Configuration environment variables.
 
 ```powershell
 $env:INSURANCE_HUB_DB_URL="jdbc:mysql://localhost:3306/insurance_hub?serverTimezone=Asia/Seoul&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true"
@@ -108,6 +100,7 @@ Open:
 
 - Login: http://localhost:8080/login
 - Dashboard: http://localhost:8080/admin
+- Monitoring: http://localhost:8080/admin/monitoring
 - Interfaces: http://localhost:8080/admin/interfaces
 - Executions: http://localhost:8080/admin/executions
 - Batch Runs: http://localhost:8080/admin/batch-runs
@@ -150,5 +143,5 @@ The database stores a BCrypt hash, not the plain password.
 - Phase 5: real MQ integration with embedded Artemis
 - Phase 6: real SFTP/FTP integration with local demo servers
 - Phase 7: real Batch integration with manual and scheduled launch support
-- Phase 8: monitoring/dashboard
+- Phase 8: monitoring dashboard, operational visibility, metrics views, and UI polish
 - Phase 9: testing/performance/final polish

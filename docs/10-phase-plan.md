@@ -67,7 +67,7 @@ Status: Complete
 
 ## Phase 7 - Real Batch Integration
 
-Status: Complete in the current codebase
+Status: Complete
 
 - Batch job configuration UI and validation.
 - Real Spring Batch manual launch.
@@ -92,9 +92,25 @@ Exit criteria:
 
 ## Phase 8 - Monitoring/Dashboard
 
-- Add richer operational metrics.
-- Add execution trend views.
-- Add failure and retry dashboard.
+Status: Complete in the current codebase
+
+- Operations dashboard with active interfaces, today success/failure, pending retries, recent retry outcomes, and quick links.
+- Protocol summary cards for REST, SOAP, MQ, BATCH, SFTP, and FTP.
+- 7-day execution trend view.
+- Top failed interface summary.
+- Recent executions and pending retry task visibility.
+- Monitoring pages for failures, retries, protocols, file transfers, MQ, and batch.
+- Execution history filters for keyword, protocol, status, trigger, and date range.
+- Read-only aggregation through `OperationsMonitoringService`.
+
+Exit criteria:
+
+- `.\gradlew.bat build` succeeds.
+- App starts with the local profile when local DB credentials are provided.
+- Admin login still works.
+- REST, SOAP, MQ, SFTP/FTP, and BATCH execution paths remain unchanged.
+- Dashboard and monitoring pages render meaningful operational summaries.
+- `application-local.yml` datasource defaults are not changed by Phase 8.
 
 ## Phase 9 - Testing, Performance, Final Polish
 

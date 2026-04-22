@@ -1,12 +1,12 @@
 # Protocol Design
 
-## Phase 7 Purpose
+## Phase 8 Purpose
 
-Phase 7 proves Batch as the final real protocol path. REST remains real from Phase 3, SOAP from Phase 4, MQ from Phase 5, and SFTP/FTP from Phase 6.
+Phase 8 keeps all protocol execution paths unchanged and adds unified operational visibility across them. REST, SOAP, MQ, SFTP, FTP, and BATCH continue to execute through their real local demo adapters.
 
 ## Current Executors
 
-| Protocol | Executor | Phase 7 Behavior |
+| Protocol | Executor | Phase 8 Behavior |
 | --- | --- | --- |
 | REST | `RestInterfaceExecutor` | Real HTTP calls with Spring `RestClient` |
 | SOAP | `SoapInterfaceExecutor` | Real SOAP XML over HTTP |
@@ -14,6 +14,17 @@ Phase 7 proves Batch as the final real protocol path. REST remains real from Pha
 | SFTP | `SftpInterfaceExecutor` | Real upload/download through embedded SFTP server |
 | FTP | `FtpInterfaceExecutor` | Real upload/download through embedded FTP server |
 | BATCH | `BatchInterfaceExecutor` | Real Spring Batch job launch |
+
+## Monitoring Rules
+
+Monitoring is read-only and protocol-agnostic:
+
+1. Counts and trends come from `interface_execution`.
+2. Retry queue visibility comes from `interface_retry_task`.
+3. MQ details come from `mq_message_history`.
+4. SFTP/FTP details come from `file_transfer_history`.
+5. Batch details come from `batch_run_history` and `batch_step_history`.
+6. Dashboard links navigate back to owning detail pages instead of duplicating protocol execution logic.
 
 ## Batch Execution Rules
 
@@ -33,20 +44,20 @@ Phase 7 proves Batch as the final real protocol path. REST remains real from Pha
 
 `interfaceSettlementSummaryJob`:
 
-- Summarizes today’s executions by protocol and status.
+- Summarizes today's executions by protocol and status.
 - Writes output under `build/batch-demo/output`.
 - Records read/write counts from summary rows.
 
 `failedExecutionRetryAggregationJob`:
 
-- Counts today’s failed executions.
+- Counts today's failed executions.
 - Counts pending retry tasks.
 - Writes output under `build/batch-demo/output`.
 
 Controlled failure:
 
 - `{"forceFail":true}` fails the job.
-- A manual payload containing `FAIL` also sets `forceFail=true`.
+- A JSON value containing `FAIL` also sets `forceFail=true`.
 
 ## Scheduling Rules
 
