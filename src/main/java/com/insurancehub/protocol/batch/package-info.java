@@ -1,4 +1,4 @@
 /**
- * Batch protocol adapter and scheduled execution support.
+ * Spring Batch protocol adapter, configuration, scheduling, and run history.
  */
 package com.insurancehub.protocol.batch;

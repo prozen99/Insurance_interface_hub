@@ -22,6 +22,13 @@ public interface InterfaceExecutionRepository extends JpaRepository<InterfaceExe
             LocalDateTime endExclusive
     );
 
+    long countByProtocolTypeAndExecutionStatusAndStartedAtBetween(
+            ProtocolType protocolType,
+            ExecutionStatus executionStatus,
+            LocalDateTime startInclusive,
+            LocalDateTime endExclusive
+    );
+
     @EntityGraph(attributePaths = {"interfaceDefinition"})
     List<InterfaceExecution> findTop5ByInterfaceDefinitionIdOrderByCreatedAtDesc(Long interfaceDefinitionId);
 

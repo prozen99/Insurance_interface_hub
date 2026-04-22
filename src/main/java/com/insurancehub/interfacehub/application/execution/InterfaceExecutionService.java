@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 
 import com.insurancehub.interfacehub.domain.ExecutionStatus;
@@ -22,7 +23,9 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutio
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -36,19 +39,22 @@ public class InterfaceExecutionService {
     private final InterfaceExecutionStepRepository interfaceExecutionStepRepository;
     private final InterfaceRetryTaskRepository interfaceRetryTaskRepository;
     private final InterfaceExecutorFactory interfaceExecutorFactory;
+    private final TransactionTemplate transactionTemplate;
 
     public InterfaceExecutionService(
             InterfaceDefinitionRepository interfaceDefinitionRepository,
             InterfaceExecutionRepository interfaceExecutionRepository,
             InterfaceExecutionStepRepository interfaceExecutionStepRepository,
             InterfaceRetryTaskRepository interfaceRetryTaskRepository,
-            InterfaceExecutorFactory interfaceExecutorFactory
+            InterfaceExecutorFactory interfaceExecutorFactory,
+            PlatformTransactionManager transactionManager
     ) {
         this.interfaceDefinitionRepository = interfaceDefinitionRepository;
         this.interfaceExecutionRepository = interfaceExecutionRepository;
         this.interfaceExecutionStepRepository = interfaceExecutionStepRepository;
         this.interfaceRetryTaskRepository = interfaceRetryTaskRepository;
         this.interfaceExecutorFactory = interfaceExecutorFactory;
+        this.transactionTemplate = new TransactionTemplate(transactionManager);
     }
 
     @Transactional(readOnly = true)
@@ -92,65 +98,51 @@ public class InterfaceExecutionService {
         return interfaceRetryTaskRepository.countByRetryStatus(RetryStatus.WAITING);
     }
 
-    @Transactional
     public InterfaceExecution executeManual(Long interfaceDefinitionId, String requestPayload, String requestedBy) {
-        InterfaceDefinition interfaceDefinition = getInterfaceDefinition(interfaceDefinitionId);
-        return execute(interfaceDefinition, null, ExecutionTriggerType.MANUAL, trimToNull(requestPayload), requestedBy);
+        return execute(interfaceDefinitionId, null, ExecutionTriggerType.MANUAL, trimToNull(requestPayload), requestedBy);
     }
 
-    @Transactional
+    public InterfaceExecution executeScheduled(Long interfaceDefinitionId, String requestPayload, String requestedBy) {
+        return execute(interfaceDefinitionId, null, ExecutionTriggerType.SCHEDULED, trimToNull(requestPayload), requestedBy);
+    }
+
     public InterfaceExecution retryFailedExecution(Long executionId, String requestedBy) {
-        InterfaceExecution original = interfaceExecutionRepository.findDetailById(executionId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Execution not found"));
-
-        if (!original.isFailed()) {
-            throw new ExecutionNotAllowedException("Only failed executions can be retried.");
-        }
-
-        InterfaceDefinition interfaceDefinition = original.getInterfaceDefinition();
-        assertInterfaceActive(interfaceDefinition);
-
-        InterfaceRetryTask retryTask = interfaceRetryTaskRepository
-                .findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(original.getId(), RetryStatus.WAITING)
-                .orElseGet(() -> interfaceRetryTaskRepository.save(
-                        InterfaceRetryTask.waitingFor(original, LocalDateTime.now())
-                ));
-
+        RetryAttempt retryAttempt = prepareRetryAttempt(executionId);
         InterfaceExecution retryExecution = execute(
-                interfaceDefinition,
-                original,
+                retryAttempt.interfaceDefinitionId(),
+                retryAttempt.retrySourceExecutionId(),
                 ExecutionTriggerType.RETRY,
-                original.getRequestPayload(),
+                retryAttempt.requestPayload(),
                 requestedBy
         );
-        retryTask.markDone(LocalDateTime.now());
+        markRetryTaskDone(retryAttempt.retryTask());
         return retryExecution;
     }
 
     private InterfaceExecution execute(
-            InterfaceDefinition interfaceDefinition,
-            InterfaceExecution retrySourceExecution,
+            Long interfaceDefinitionId,
+            Long retrySourceExecutionId,
             ExecutionTriggerType triggerType,
             String requestPayload,
             String requestedBy
     ) {
-        assertInterfaceActive(interfaceDefinition);
-
-        InterfaceExecution execution = InterfaceExecution.create(
-                generateExecutionNo(),
-                interfaceDefinition,
-                retrySourceExecution,
+        StartedExecution startedExecution = startExecution(
+                interfaceDefinitionId,
+                retrySourceExecutionId,
                 triggerType,
                 requestPayload,
                 requestedBy
         );
-        execution.markRunning(LocalDateTime.now());
-        interfaceExecutionRepository.save(execution);
 
         ExecutionResult result;
         try {
-            InterfaceExecutor executor = interfaceExecutorFactory.getExecutor(interfaceDefinition.getProtocolType());
-            result = executor.execute(new ExecutionRequest(interfaceDefinition, execution, triggerType, requestPayload));
+            InterfaceExecutor executor = interfaceExecutorFactory.getExecutor(startedExecution.interfaceDefinition().getProtocolType());
+            result = executor.execute(new ExecutionRequest(
+                    startedExecution.interfaceDefinition(),
+                    startedExecution.execution(),
+                    triggerType,
+                    requestPayload
+            ));
         } catch (Exception exception) {
             result = ExecutionResult.failure(
                     "EXECUTOR_ERROR",
@@ -167,39 +159,110 @@ public class InterfaceExecutionService {
             );
         }
 
-        execution.recordHttpExchange(
-                result.requestUrl(),
-                result.requestMethod(),
-                result.protocolAction(),
-                result.requestHeaders(),
-                result.responseStatusCode(),
-                result.responseHeaders(),
-                result.latencyMs()
-        );
+        return completeExecution(startedExecution.execution(), result);
+    }
 
-        for (ExecutionStepLog step : result.steps()) {
-            interfaceExecutionStepRepository.save(InterfaceExecutionStep.create(
-                    execution,
-                    step.stepOrder(),
-                    step.stepName(),
-                    step.stepStatus(),
-                    step.message(),
-                    step.startedAt(),
-                    step.finishedAt()
-            ));
-        }
+    private StartedExecution startExecution(
+            Long interfaceDefinitionId,
+            Long retrySourceExecutionId,
+            ExecutionTriggerType triggerType,
+            String requestPayload,
+            String requestedBy
+    ) {
+        return Objects.requireNonNull(transactionTemplate.execute(status -> {
+            InterfaceDefinition interfaceDefinition = getInterfaceDefinition(interfaceDefinitionId);
+            assertInterfaceActive(interfaceDefinition);
+            InterfaceExecution retrySourceExecution = null;
+            if (retrySourceExecutionId != null) {
+                retrySourceExecution = interfaceExecutionRepository.findDetailById(retrySourceExecutionId)
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Retry source execution not found"));
+            }
 
-        if (result.success()) {
-            execution.markSuccess(result.responsePayload(), LocalDateTime.now());
-        } else {
-            execution.markFailed(result.errorCode(), result.errorMessage(), result.responsePayload(), LocalDateTime.now());
-            interfaceRetryTaskRepository.save(InterfaceRetryTask.waitingFor(
-                    execution,
-                    LocalDateTime.now().plusMinutes(5)
-            ));
-        }
+            InterfaceExecution execution = InterfaceExecution.create(
+                    generateExecutionNo(),
+                    interfaceDefinition,
+                    retrySourceExecution,
+                    triggerType,
+                    requestPayload,
+                    requestedBy
+            );
+            execution.markRunning(LocalDateTime.now());
+            return new StartedExecution(interfaceDefinition, interfaceExecutionRepository.saveAndFlush(execution));
+        }));
+    }
 
-        return execution;
+    private InterfaceExecution completeExecution(InterfaceExecution execution, ExecutionResult result) {
+        return Objects.requireNonNull(transactionTemplate.execute(status -> {
+            LocalDateTime finishedAt = LocalDateTime.now();
+
+            execution.recordHttpExchange(
+                    result.requestUrl(),
+                    result.requestMethod(),
+                    result.protocolAction(),
+                    result.requestHeaders(),
+                    result.responseStatusCode(),
+                    result.responseHeaders(),
+                    result.latencyMs()
+            );
+
+            for (ExecutionStepLog step : result.steps()) {
+                interfaceExecutionStepRepository.save(InterfaceExecutionStep.create(
+                        execution,
+                        step.stepOrder(),
+                        step.stepName(),
+                        step.stepStatus(),
+                        step.message(),
+                        step.startedAt(),
+                        step.finishedAt()
+                ));
+            }
+
+            if (result.success()) {
+                execution.markSuccess(result.responsePayload(), finishedAt);
+            } else {
+                execution.markFailed(result.errorCode(), result.errorMessage(), result.responsePayload(), finishedAt);
+                interfaceRetryTaskRepository.save(InterfaceRetryTask.waitingFor(
+                        execution,
+                        finishedAt.plusMinutes(5)
+                ));
+            }
+
+            return interfaceExecutionRepository.save(execution);
+        }));
+    }
+
+    private RetryAttempt prepareRetryAttempt(Long executionId) {
+        return Objects.requireNonNull(transactionTemplate.execute(status -> {
+            InterfaceExecution original = interfaceExecutionRepository.findDetailById(executionId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Execution not found"));
+
+            if (!original.isFailed()) {
+                throw new ExecutionNotAllowedException("Only failed executions can be retried.");
+            }
+
+            InterfaceDefinition interfaceDefinition = original.getInterfaceDefinition();
+            assertInterfaceActive(interfaceDefinition);
+
+            InterfaceRetryTask retryTask = interfaceRetryTaskRepository
+                    .findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(original.getId(), RetryStatus.WAITING)
+                    .orElseGet(() -> interfaceRetryTaskRepository.save(
+                            InterfaceRetryTask.waitingFor(original, LocalDateTime.now())
+                    ));
+
+            return new RetryAttempt(
+                    interfaceDefinition.getId(),
+                    original.getId(),
+                    original.getRequestPayload(),
+                    retryTask
+            );
+        }));
+    }
+
+    private void markRetryTaskDone(InterfaceRetryTask retryTask) {
+        transactionTemplate.executeWithoutResult(status -> {
+            retryTask.markDone(LocalDateTime.now());
+            interfaceRetryTaskRepository.save(retryTask);
+        });
     }
 
     private InterfaceDefinition getInterfaceDefinition(Long interfaceDefinitionId) {
@@ -236,5 +299,19 @@ public class InterfaceExecutionService {
             return null;
         }
         return value.trim();
+    }
+
+    private record StartedExecution(
+            InterfaceDefinition interfaceDefinition,
+            InterfaceExecution execution
+    ) {
+    }
+
+    private record RetryAttempt(
+            Long interfaceDefinitionId,
+            Long retrySourceExecutionId,
+            String requestPayload,
+            InterfaceRetryTask retryTask
+    ) {
     }
 }
