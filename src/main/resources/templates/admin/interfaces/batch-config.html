@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Batch Config | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Batch configuration</p>
+            <h2 th:text="${interfaceDefinition.interfaceCode}">IF_BATCH_SETTLEMENT_001</h2>
+            <p class="lead">Configure the local Spring Batch job used by this interface. Scheduled runs stay disabled until both this config and the app scheduler are enabled.</p>
+        </header>
+
+        <div class="toolbar">
+            <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Back to interface</a>
+        </div>
+
+        <section class="panel">
+            <form class="form-grid panel-body"
+                  th:action="@{/admin/interfaces/{id}/batch-config(id=${interfaceDefinition.id})}"
+                  th:object="${form}"
+                  method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+
+                <label>
+                    Job type
+                    <select th:field="*{jobType}">
+                        <option th:each="type : ${jobTypeOptions}"
+                                th:value="${type}"
+                                th:text="${type + ' - ' + type.description}">INTERFACE_SETTLEMENT_SUMMARY</option>
+                    </select>
+                    <span class="field-error" th:if="${#fields.hasErrors('jobType')}" th:errors="*{jobType}">Required</span>
+                </label>
+
+                <label>
+                    Spring Batch job name
+                    <input type="text" th:field="*{jobName}" placeholder="interfaceSettlementSummaryJob">
+                    <span class="field-error" th:if="${#fields.hasErrors('jobName')}" th:errors="*{jobName}">Required</span>
+                    <span class="help-text">Use interfaceSettlementSummaryJob or failedExecutionRetryAggregationJob for the Phase 7 demo.</span>
+                </label>
+
+                <label>
+                    Cron expression
+                    <input type="text" th:field="*{cronExpression}" placeholder="0/30 * * * * *">
+                    <span class="field-error" th:if="${#fields.hasErrors('cronExpression')}" th:errors="*{cronExpression}">Invalid</span>
+                    <span class="help-text">Spring cron format with seconds. Example: 0/30 * * * * * runs every 30 seconds when scheduling is enabled.</span>
+                </label>
+
+                <label>
+                    Timeout
+                    <input type="number" th:field="*{timeoutMillis}" min="1000" max="3600000">
+                    <span class="field-error" th:if="${#fields.hasErrors('timeoutMillis')}" th:errors="*{timeoutMillis}">Invalid</span>
+                </label>
+
+                <label>
+                    Max parallel count
+                    <input type="number" th:field="*{maxParallelCount}" min="1" max="1">
+                    <span class="field-error" th:if="${#fields.hasErrors('maxParallelCount')}" th:errors="*{maxParallelCount}">Invalid</span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" th:field="*{enabled}">
+                    Enable scheduled execution for this config
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" th:field="*{retryable}">
+                    Retryable when execution fails
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" th:field="*{active}">
+                    Active for manual execution
+                </label>
+
+                <label>
+                    Parameter template JSON
+                    <textarea class="large-textarea" th:field="*{parameterTemplateJson}" placeholder='{"businessDate":"TODAY","forceFail":false}'></textarea>
+                    <span class="field-error" th:if="${#fields.hasErrors('parameterTemplateJson')}" th:errors="*{parameterTemplateJson}">Invalid JSON</span>
+                    <span class="help-text">Set forceFail to true or include FAIL in a manual payload to demo a controlled batch failure.</span>
+                </label>
+
+                <div class="form-actions">
+                    <button class="button primary" type="submit">Save batch config</button>
+                    <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

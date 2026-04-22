@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Batch Run Detail | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Batch run detail</p>
+            <h2 th:text="${batchRun.jobName}">interfaceSettlementSummaryJob</h2>
+            <p class="lead" th:text="${batchRun.interfaceDefinition.interfaceCode + ' - ' + batchRun.interfaceDefinition.interfaceName}">Interface</p>
+        </header>
+
+        <div class="toolbar">
+            <a class="button" th:href="@{/admin/batch-runs}">Back to batch runs</a>
+            <div class="toolbar-actions">
+                <a class="button" th:href="@{/admin/executions/{id}(id=${batchRun.execution.id})}">Open execution</a>
+                <a class="button" th:href="@{/admin/interfaces/{id}(id=${batchRun.interfaceDefinition.id})}">Open interface</a>
+            </div>
+        </div>
+
+        <section class="panel spacing-bottom">
+            <dl class="detail-grid">
+                <div class="detail-item">
+                    <dt>Status</dt>
+                    <dd>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(batchRun.batchStatus)}"
+                              th:text="${batchRun.batchStatus}">COMPLETED</span>
+                    </dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Job type</dt>
+                    <dd th:text="${batchRun.jobType}">INTERFACE_SETTLEMENT_SUMMARY</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Spring Batch execution ID</dt>
+                    <dd th:text="${batchRun.springBatchJobExecutionId == null ? '-' : batchRun.springBatchJobExecutionId}">1</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Exit code</dt>
+                    <dd th:text="${batchRun.exitCode == null ? '-' : batchRun.exitCode}">COMPLETED</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Read / Write / Skip</dt>
+                    <dd th:text="${(batchRun.readCount == null ? '-' : batchRun.readCount) + ' / ' + (batchRun.writeCount == null ? '-' : batchRun.writeCount) + ' / ' + (batchRun.skipCount == null ? '-' : batchRun.skipCount)}">0 / 0 / 0</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Latency</dt>
+                    <dd th:text="${batchRun.latencyMs == null ? '-' : batchRun.latencyMs + ' ms'}">12 ms</dd>
+                </div>
+                <div class="detail-item full" th:if="${batchRun.errorMessage != null}">
+                    <dt>Error</dt>
+                    <dd th:text="${batchRun.errorMessage}">error</dd>
+                </div>
+                <div class="detail-item full">
+                    <dt>Output summary</dt>
+                    <dd>
+                        <pre class="payload compact" th:text="${batchRun.outputSummary == null ? 'No output summary recorded.' : batchRun.outputSummary}">summary</pre>
+                    </dd>
+                </div>
+                <div class="detail-item full">
+                    <dt>Job parameters</dt>
+                    <dd>
+                        <pre class="payload compact" th:text="${batchRun.jobParametersJson == null ? '{}' : batchRun.jobParametersJson}">{}</pre>
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Step details</p>
+                    <h3>Spring Batch steps</h3>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Status</th>
+                    <th>Read</th>
+                    <th>Write</th>
+                    <th>Skip</th>
+                    <th>Commit</th>
+                    <th>Rollback</th>
+                    <th>Exit</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="step : ${batchSteps}">
+                    <td th:text="${step.stepName}">interfaceSettlementSummaryStep</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(step.stepStatus)}"
+                              th:text="${step.stepStatus}">COMPLETED</span>
+                    </td>
+                    <td th:text="${step.readCount == null ? '-' : step.readCount}">0</td>
+                    <td th:text="${step.writeCount == null ? '-' : step.writeCount}">0</td>
+                    <td th:text="${step.skipCount == null ? '-' : step.skipCount}">0</td>
+                    <td th:text="${step.commitCount == null ? '-' : step.commitCount}">1</td>
+                    <td th:text="${step.rollbackCount == null ? '-' : step.rollbackCount}">0</td>
+                    <td th:text="${step.exitCode == null ? '-' : step.exitCode}">COMPLETED</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(batchSteps)}">
+                    <td colspan="8" class="empty-state">No batch step history recorded.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

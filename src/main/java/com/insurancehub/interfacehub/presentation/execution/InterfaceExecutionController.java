@@ -5,6 +5,7 @@ import com.insurancehub.interfacehub.application.execution.InterfaceExecutionSer
 import com.insurancehub.interfacehub.domain.ExecutionStatus;
 import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
+import com.insurancehub.protocol.batch.application.BatchRunHistoryService;
 import com.insurancehub.protocol.filetransfer.application.FileTransferHistoryService;
 import com.insurancehub.protocol.mq.application.MqMessageHistoryService;
 import org.springframework.security.core.Authentication;
@@ -25,15 +26,18 @@ public class InterfaceExecutionController {
     private final InterfaceExecutionService interfaceExecutionService;
     private final MqMessageHistoryService mqMessageHistoryService;
     private final FileTransferHistoryService fileTransferHistoryService;
+    private final BatchRunHistoryService batchRunHistoryService;
 
     public InterfaceExecutionController(
             InterfaceExecutionService interfaceExecutionService,
             MqMessageHistoryService mqMessageHistoryService,
-            FileTransferHistoryService fileTransferHistoryService
+            FileTransferHistoryService fileTransferHistoryService,
+            BatchRunHistoryService batchRunHistoryService
     ) {
         this.interfaceExecutionService = interfaceExecutionService;
         this.mqMessageHistoryService = mqMessageHistoryService;
         this.fileTransferHistoryService = fileTransferHistoryService;
+        this.batchRunHistoryService = batchRunHistoryService;
     }
 
     @ModelAttribute("protocolOptions")
@@ -105,6 +109,9 @@ public class InterfaceExecutionController {
         }
         if (execution.getProtocolType() == ProtocolType.SFTP || execution.getProtocolType() == ProtocolType.FTP) {
             model.addAttribute("fileTransfers", fileTransferHistoryService.findByExecutionId(id));
+        }
+        if (execution.getProtocolType() == ProtocolType.BATCH) {
+            model.addAttribute("batchRuns", batchRunHistoryService.findByExecutionId(id));
         }
     }
 }

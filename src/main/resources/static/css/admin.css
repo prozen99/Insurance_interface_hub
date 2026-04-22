@@ -279,19 +279,23 @@ a {
 }
 
 .status-success,
-.status-done {
+.status-done,
+.status-completed {
     color: var(--success-text);
     background: var(--success-bg);
 }
 
 .status-failed,
+.status-stopped,
 .status-cancelled {
     color: var(--error-text);
     background: var(--error-bg);
 }
 
 .status-running,
-.status-waiting {
+.status-waiting,
+.status-starting,
+.status-started {
     color: #815006;
     background: #fff4d6;
 }
@@ -536,7 +540,7 @@ textarea {
     }
 
     .navigation {
-        grid-template-columns: repeat(5, minmax(0, 1fr));
+        grid-template-columns: repeat(6, minmax(0, 1fr));
     }
 
     .logout-form {

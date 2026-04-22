@@ -84,17 +84,17 @@
         <section class="panel spacing-bottom" th:if="${execution.requestUrl != null}">
             <div class="panel-header">
                 <div>
-                    <p class="eyebrow" th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP exchange' : (${execution.protocolType.name() == 'MQ'} ? 'MQ exchange' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'File transfer exchange' : 'REST exchange'))">Protocol exchange</p>
-                    <h3 th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP request and response' : (${execution.protocolType.name() == 'MQ'} ? 'MQ publish and consume' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'File upload and download' : 'HTTP request and response'))">Request and response</h3>
+                    <p class="eyebrow" th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP exchange' : (${execution.protocolType.name() == 'MQ'} ? 'MQ exchange' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'File transfer exchange' : (${execution.protocolType.name() == 'BATCH'} ? 'Batch run' : 'REST exchange')))">Protocol exchange</p>
+                    <h3 th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP request and response' : (${execution.protocolType.name() == 'MQ'} ? 'MQ publish and consume' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'File upload and download' : (${execution.protocolType.name() == 'BATCH'} ? 'Spring Batch job result' : 'HTTP request and response')))">Request and response</h3>
                 </div>
             </div>
             <dl class="detail-grid">
                 <div class="detail-item">
-                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Flow' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Direction' : 'Method')">Method</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Flow' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Direction' : (${execution.protocolType.name() == 'BATCH'} ? 'Launch type' : 'Method'))">Method</dt>
                     <dd th:text="${execution.requestMethod == null ? '-' : execution.requestMethod}">POST</dd>
                 </div>
                 <div class="detail-item">
-                    <dt th:text="${execution.protocolType.name() == 'MQ' or execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'HTTP status' : 'Status code'">Status code</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ' or execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP' or execution.protocolType.name() == 'BATCH'} ? 'Response code' : 'Status code'">Status code</dt>
                     <dd th:text="${execution.responseStatusCode == null ? '-' : execution.responseStatusCode}">200</dd>
                 </div>
                 <div class="detail-item">
@@ -102,26 +102,72 @@
                     <dd th:text="${execution.latencyMs == null ? '-' : execution.latencyMs + ' ms'}">18 ms</dd>
                 </div>
                 <div class="detail-item" th:if="${execution.protocolAction != null}">
-                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAPAction' : (${execution.protocolType.name() == 'MQ'} ? 'Correlation key' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Local file' : 'Protocol action'))">SOAPAction</dt>
+                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAPAction' : (${execution.protocolType.name() == 'MQ'} ? 'Correlation key' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Local file' : (${execution.protocolType.name() == 'BATCH'} ? 'Job type' : 'Protocol action')))">SOAPAction</dt>
                     <dd th:text="${execution.protocolAction}">urn:PolicyInquiry</dd>
                 </div>
                 <div class="detail-item">
-                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'Endpoint URL' : (${execution.protocolType.name() == 'MQ'} ? 'Destination' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer target' : 'URL'))">URL</dt>
+                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'Endpoint URL' : (${execution.protocolType.name() == 'MQ'} ? 'Destination' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer target' : (${execution.protocolType.name() == 'BATCH'} ? 'Job name' : 'URL')))">URL</dt>
                     <dd th:text="${execution.requestUrl}">http://localhost:8080/simulator/rest/premium/calculate</dd>
                 </div>
                 <div class="detail-item full">
-                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Publish metadata' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer request metadata' : 'Request headers')">Request headers</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Publish metadata' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer request metadata' : (${execution.protocolType.name() == 'BATCH'} ? 'Job parameters' : 'Request headers'))">Request headers</dt>
                     <dd>
                         <pre class="payload compact" th:text="${execution.requestHeaders == null ? '{}' : execution.requestHeaders}">{}</pre>
                     </dd>
                 </div>
                 <div class="detail-item full">
-                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Consume metadata' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer result metadata' : 'Response headers')">Response headers</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Consume metadata' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer result metadata' : (${execution.protocolType.name() == 'BATCH'} ? 'Batch result metadata' : 'Response headers'))">Response headers</dt>
                     <dd>
                         <pre class="payload compact" th:text="${execution.responseHeaders == null ? '{}' : execution.responseHeaders}">{}</pre>
                     </dd>
                 </div>
             </dl>
+        </section>
+
+        <section class="panel spacing-bottom" th:if="${batchRuns != null}">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Batch run history</p>
+                    <h3>Spring Batch result</h3>
+                </div>
+                <a class="button" th:href="@{/admin/batch-runs}">All batch runs</a>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Status</th>
+                    <th>Read</th>
+                    <th>Write</th>
+                    <th>Skip</th>
+                    <th>Latency</th>
+                    <th>Summary</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="run : ${batchRuns}">
+                    <td>
+                        <strong th:text="${run.jobName}">interfaceSettlementSummaryJob</strong>
+                        <div class="help-text" th:text="${run.jobType}">INTERFACE_SETTLEMENT_SUMMARY</div>
+                    </td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(run.batchStatus)}"
+                              th:text="${run.batchStatus}">COMPLETED</span>
+                    </td>
+                    <td th:text="${run.readCount == null ? '-' : run.readCount}">0</td>
+                    <td th:text="${run.writeCount == null ? '-' : run.writeCount}">0</td>
+                    <td th:text="${run.skipCount == null ? '-' : run.skipCount}">0</td>
+                    <td th:text="${run.latencyMs == null ? '-' : run.latencyMs + ' ms'}">12 ms</td>
+                    <td th:text="${run.outputSummary == null ? '-' : run.outputSummary}">summary</td>
+                    <td><a th:href="@{/admin/batch-runs/{id}(id=${run.id})}">Batch detail</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(batchRuns)}">
+                    <td colspan="8" class="empty-state">No batch run history recorded.</td>
+                </tr>
+                </tbody>
+            </table>
         </section>
 
         <section class="panel spacing-bottom" th:if="${fileTransfers != null}">

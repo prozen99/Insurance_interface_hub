@@ -12,6 +12,8 @@ import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.presentation.form.InterfaceDefinitionForm;
 import com.insurancehub.interfacehub.presentation.form.ManualExecutionForm;
+import com.insurancehub.protocol.batch.application.BatchJobConfigService;
+import com.insurancehub.protocol.batch.domain.entity.BatchJobConfig;
 import com.insurancehub.protocol.filetransfer.application.FileTransferConfigService;
 import com.insurancehub.protocol.filetransfer.application.FileTransferPayloadCodec;
 import com.insurancehub.protocol.filetransfer.domain.TransferDirection;
@@ -48,6 +50,7 @@ public class InterfaceDefinitionController {
     private final MqChannelConfigService mqChannelConfigService;
     private final FileTransferConfigService fileTransferConfigService;
     private final FileTransferPayloadCodec fileTransferPayloadCodec;
+    private final BatchJobConfigService batchJobConfigService;
 
     public InterfaceDefinitionController(
             InterfaceDefinitionService interfaceDefinitionService,
@@ -58,7 +61,8 @@ public class InterfaceDefinitionController {
             SoapEndpointConfigService soapEndpointConfigService,
             MqChannelConfigService mqChannelConfigService,
             FileTransferConfigService fileTransferConfigService,
-            FileTransferPayloadCodec fileTransferPayloadCodec
+            FileTransferPayloadCodec fileTransferPayloadCodec,
+            BatchJobConfigService batchJobConfigService
     ) {
         this.interfaceDefinitionService = interfaceDefinitionService;
         this.partnerCompanyService = partnerCompanyService;
@@ -69,6 +73,7 @@ public class InterfaceDefinitionController {
         this.mqChannelConfigService = mqChannelConfigService;
         this.fileTransferConfigService = fileTransferConfigService;
         this.fileTransferPayloadCodec = fileTransferPayloadCodec;
+        this.batchJobConfigService = batchJobConfigService;
     }
 
     @ModelAttribute("protocolOptions")
@@ -147,6 +152,10 @@ public class InterfaceDefinitionController {
             manualExecutionForm.setTransferDirection(TransferDirection.UPLOAD);
             manualExecutionForm.setLocalFileName(FileTransferConfigService.SAMPLE_UPLOAD_FILE_NAME);
             manualExecutionForm.setRemoteFilePath("/inbox/" + FileTransferConfigService.SAMPLE_UPLOAD_FILE_NAME);
+        }
+        BatchJobConfig batchConfig = (BatchJobConfig) model.asMap().get("batchConfig");
+        if (interfaceDefinition.getProtocolType() == ProtocolType.BATCH && batchConfig != null) {
+            manualExecutionForm.setRequestPayload(batchConfig.getParameterTemplateJson());
         }
         model.addAttribute("manualExecutionForm", manualExecutionForm);
         return "admin/interfaces/detail";
@@ -262,6 +271,10 @@ public class InterfaceDefinitionController {
             FileTransferConfig fileTransferConfig = fileTransferConfigService.findByInterfaceDefinitionId(id).orElse(null);
             model.addAttribute("fileTransferConfig", fileTransferConfig);
             model.addAttribute("transferDirectionOptions", TransferDirection.values());
+        }
+        if (interfaceDefinition.getProtocolType() == ProtocolType.BATCH) {
+            BatchJobConfig batchConfig = batchJobConfigService.findByInterfaceDefinitionId(id).orElse(null);
+            model.addAttribute("batchConfig", batchConfig);
         }
         return interfaceDefinition;
     }

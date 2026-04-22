@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Batch Runs | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Batch history</p>
+            <h2>Batch runs</h2>
+            <p class="lead">Review manual and scheduled Spring Batch runs, step counts, output summaries, and linked execution detail pages.</p>
+        </header>
+
+        <div class="toolbar">
+            <p class="help-text" th:text="${#lists.size(batchRuns)} + ' batch runs'">0 batch runs</p>
+            <a class="button" th:href="@{/admin/executions(protocolType='BATCH')}">Unified execution history</a>
+        </div>
+
+        <section class="panel">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Interface</th>
+                    <th>Status</th>
+                    <th>Read</th>
+                    <th>Write</th>
+                    <th>Skip</th>
+                    <th>Started</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="run : ${batchRuns}">
+                    <td>
+                        <a th:href="@{/admin/batch-runs/{id}(id=${run.id})}" th:text="${run.jobName}">interfaceSettlementSummaryJob</a>
+                        <div class="help-text" th:text="${run.jobType}">INTERFACE_SETTLEMENT_SUMMARY</div>
+                    </td>
+                    <td th:text="${run.interfaceDefinition.interfaceCode}">IF_BATCH_SETTLEMENT_001</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(run.batchStatus)}"
+                              th:text="${run.batchStatus}">COMPLETED</span>
+                    </td>
+                    <td th:text="${run.readCount == null ? '-' : run.readCount}">0</td>
+                    <td th:text="${run.writeCount == null ? '-' : run.writeCount}">0</td>
+                    <td th:text="${run.skipCount == null ? '-' : run.skipCount}">0</td>
+                    <td th:text="${run.startedAt == null ? '-' : #temporals.format(run.startedAt, 'yyyy-MM-dd HH:mm:ss')}">2026-04-22</td>
+                    <td><a th:href="@{/admin/executions/{id}(id=${run.execution.id})}">Execution</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(batchRuns)}">
+                    <td colspan="8" class="empty-state">No batch runs recorded yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

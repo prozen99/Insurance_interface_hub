@@ -44,6 +44,9 @@
                    th:if="${interfaceDefinition.protocolType.name() == 'MQ'}"
                    th:href="@{/admin/interfaces/{id}/mq-config(id=${interfaceDefinition.id})}">Configure MQ</a>
                 <a class="button"
+                   th:if="${interfaceDefinition.protocolType.name() == 'BATCH'}"
+                   th:href="@{/admin/interfaces/{id}/batch-config(id=${interfaceDefinition.id})}">Configure Batch</a>
+                <a class="button"
                    th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}"
                    th:href="@{/admin/interfaces/{id}/file-transfer-config(id=${interfaceDefinition.id})}"
                    th:text="'Configure ' + ${interfaceDefinition.protocolType}">Configure file transfer</a>
@@ -95,7 +98,7 @@
                     <dd th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">Phase 5 keeps SOAP on the real XML executor introduced in Phase 4.</dd>
                     <dd th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">Phase 5 publishes and consumes a real JMS message through the embedded local Artemis broker.</dd>
                     <dd th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">Phase 6 transfers real files through local demo file-transfer servers and records transfer history.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ' and interfaceDefinition.protocolType.name() != 'SFTP' and interfaceDefinition.protocolType.name() != 'FTP'}">Phase 6 keeps this protocol mock-driven while REST, SOAP, MQ, SFTP, and FTP are implemented as real integration paths.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'BATCH'}">Phase 7 launches real local Spring Batch jobs, records run metadata, and supports manual retry/rerun from execution history.</dd>
                 </div>
             </dl>
         </section>
@@ -306,6 +309,59 @@
             </dl>
         </section>
 
+        <section class="panel spacing-bottom" th:if="${interfaceDefinition.protocolType.name() == 'BATCH'}">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Batch settings</p>
+                    <h3>Spring Batch job configuration</h3>
+                </div>
+                <a class="button" th:href="@{/admin/interfaces/{id}/batch-config(id=${interfaceDefinition.id})}">Edit Batch config</a>
+            </div>
+            <div class="empty-state panel-body" th:if="${batchConfig == null}">
+                Batch job settings are not configured yet.
+            </div>
+            <dl class="detail-grid" th:if="${batchConfig != null}">
+                <div class="detail-item">
+                    <dt>Job type</dt>
+                    <dd th:text="${batchConfig.jobType}">INTERFACE_SETTLEMENT_SUMMARY</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Active</dt>
+                    <dd>
+                        <span class="status"
+                              th:classappend="${batchConfig.active} ? ' status-active' : ' status-inactive'"
+                              th:text="${batchConfig.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+                    </dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Job name</dt>
+                    <dd th:text="${batchConfig.jobName}">interfaceSettlementSummaryJob</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Schedule enabled</dt>
+                    <dd th:text="${batchConfig.enabled ? 'YES' : 'NO'}">NO</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Cron expression</dt>
+                    <dd th:text="${batchConfig.cronExpression == null ? '-' : batchConfig.cronExpression}">0/30 * * * * *</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Retryable</dt>
+                    <dd th:text="${batchConfig.retryable ? 'YES' : 'NO'}">YES</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Timeout</dt>
+                    <dd th:text="${batchConfig.timeoutMillis + ' ms'}">300000 ms</dd>
+                </div>
+                <div class="detail-item full">
+                    <dt>Parameter template JSON</dt>
+                    <dd>
+                        <pre class="payload compact" th:text="${batchConfig.parameterTemplateJson == null ? '{}' : batchConfig.parameterTemplateJson}">{}</pre>
+                    </dd>
+                </div>
+            </dl>
+        </section>
+
         <section class="panel spacing-bottom">
             <div class="panel-header">
                 <div>
@@ -344,7 +400,7 @@
                 <label th:if="${interfaceDefinition.protocolType.name() != 'SFTP' and interfaceDefinition.protocolType.name() != 'FTP'}">
                     Request payload
                     <textarea th:field="*{requestPayload}"
-                              th:placeholder="${interfaceDefinition.protocolType.name() == 'REST'} ? 'JSON request body sent to the configured REST endpoint. Include FAIL to trigger simulator failure.' : (${interfaceDefinition.protocolType.name() == 'SOAP'} ? 'SOAP envelope XML sent to the configured SOAP endpoint. Include FAIL to trigger a SOAP fault.' : (${interfaceDefinition.protocolType.name() == 'MQ'} ? 'Text message payload sent to the configured MQ destination. Include FAIL to trigger consumer failure.' : 'Optional mock request payload. Include FAIL to simulate failure.'))"></textarea>
+                              th:placeholder="${interfaceDefinition.protocolType.name() == 'REST'} ? 'JSON request body sent to the configured REST endpoint. Include FAIL to trigger simulator failure.' : (${interfaceDefinition.protocolType.name() == 'SOAP'} ? 'SOAP envelope XML sent to the configured SOAP endpoint. Include FAIL to trigger a SOAP fault.' : (${interfaceDefinition.protocolType.name() == 'MQ'} ? 'Text message payload sent to the configured MQ destination. Include FAIL to trigger consumer failure.' : (${interfaceDefinition.protocolType.name() == 'BATCH'} ? 'Batch job parameters JSON. Example: {&quot;businessDate&quot;:&quot;TODAY&quot;,&quot;forceFail&quot;:false}' : 'Optional request payload. Include FAIL to simulate failure.')))"></textarea>
                     <span class="field-error" th:if="${#fields.hasErrors('requestPayload')}" th:errors="*{requestPayload}">Too long</span>
                 </label>
                 <div class="form-actions">
@@ -352,8 +408,8 @@
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'REST'}">REST calls the configured endpoint. The local simulator returns a controlled failure when the payload contains FAIL.</p>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">SOAP calls the configured endpoint. The local simulator returns a SOAP fault when the XML contains FAIL.</p>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">MQ publishes to the embedded local Artemis broker, then consumes the same message by correlation key. Payloads containing FAIL simulate consumer failure.</p>
+                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'BATCH'}">Batch launches the configured Spring Batch job. Use {"businessDate":"TODAY","forceFail":true} or include FAIL to demo a controlled failure.</p>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">File transfer uses local demo servers. Upload sample: local file sample-upload.txt to /inbox/sample-upload.txt. Download sample: remote /outbox/sample-download.txt to local file sample-download.txt.</p>
-                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ' and interfaceDefinition.protocolType.name() != 'SFTP' and interfaceDefinition.protocolType.name() != 'FTP'}">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
                 </div>
             </form>
         </section>

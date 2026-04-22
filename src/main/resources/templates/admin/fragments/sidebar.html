@@ -5,7 +5,7 @@
     <div class="brand">
         <span class="brand-mark">IIH</span>
         <div>
-            <p class="eyebrow">Phase 4</p>
+            <p class="eyebrow">Phase 7</p>
             <h1>Insurance Interface Hub</h1>
         </div>
     </div>
@@ -13,6 +13,7 @@
         <a th:classappend="${activeNav == 'dashboard'} ? ' active'" th:href="@{/admin}">Dashboard</a>
         <a th:classappend="${activeNav == 'interfaces'} ? ' active'" th:href="@{/admin/interfaces}">Interfaces</a>
         <a th:classappend="${activeNav == 'executions'} ? ' active'" th:href="@{/admin/executions}">Executions</a>
+        <a th:classappend="${activeNav == 'batchRuns'} ? ' active'" th:href="@{/admin/batch-runs}">Batch Runs</a>
         <a th:classappend="${activeNav == 'partners'} ? ' active'" th:href="@{/admin/partners}">Partners</a>
         <a th:classappend="${activeNav == 'systems'} ? ' active'" th:href="@{/admin/systems}">Internal Systems</a>
     </nav>
