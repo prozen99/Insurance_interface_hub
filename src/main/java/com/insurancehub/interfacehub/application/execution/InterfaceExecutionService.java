@@ -59,7 +59,28 @@ public class InterfaceExecutionService {
 
     @Transactional(readOnly = true)
     public List<InterfaceExecution> search(String keyword, ProtocolType protocolType, ExecutionStatus executionStatus) {
-        return interfaceExecutionRepository.search(normalizeKeyword(keyword), protocolType, executionStatus);
+        return search(keyword, protocolType, executionStatus, null, null, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<InterfaceExecution> search(
+            String keyword,
+            ProtocolType protocolType,
+            ExecutionStatus executionStatus,
+            ExecutionTriggerType triggerType,
+            LocalDate startedFrom,
+            LocalDate startedTo
+    ) {
+        LocalDateTime startedFromDateTime = startedFrom == null ? null : startedFrom.atStartOfDay();
+        LocalDateTime startedToDateTime = startedTo == null ? null : startedTo.plusDays(1).atStartOfDay();
+        return interfaceExecutionRepository.search(
+                normalizeKeyword(keyword),
+                protocolType,
+                executionStatus,
+                triggerType,
+                startedFromDateTime,
+                startedToDateTime
+        );
     }
 
     @Transactional(readOnly = true)

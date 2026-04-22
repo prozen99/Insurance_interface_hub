@@ -19,6 +19,10 @@ public interface InterfaceDefinitionRepository extends JpaRepository<InterfaceDe
 
     long countByStatus(InterfaceStatus status);
 
+    long countByProtocolType(ProtocolType protocolType);
+
+    long countByProtocolTypeAndStatus(ProtocolType protocolType, InterfaceStatus status);
+
     @EntityGraph(attributePaths = {"partnerCompany", "internalSystem"})
     @Query("""
             select i

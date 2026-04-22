@@ -47,12 +47,12 @@ public class DashboardService {
 
     public List<ProtocolModule> getProtocolModules() {
         return List.of(
-                new ProtocolModule("REST", "HTTP API endpoints and partner callbacks"),
-                new ProtocolModule("SOAP", "Legacy XML web service integrations"),
-                new ProtocolModule("MQ", "Queue-based asynchronous interfaces"),
-                new ProtocolModule("Batch", "Scheduled jobs and manual batch runs"),
-                new ProtocolModule("SFTP", "Secure file transfer integrations"),
-                new ProtocolModule("FTP", "Legacy file transfer integrations")
+                new ProtocolModule("REST", "HTTP API calls with request and response inspection"),
+                new ProtocolModule("SOAP", "SOAP XML calls with simulator-backed fault visibility"),
+                new ProtocolModule("MQ", "Embedded Artemis publish and consume monitoring"),
+                new ProtocolModule("Batch", "Manual and scheduled Spring Batch run visibility"),
+                new ProtocolModule("SFTP", "Secure file transfer upload and download history"),
+                new ProtocolModule("FTP", "Legacy file transfer upload and download history")
         );
     }
 
