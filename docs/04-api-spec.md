@@ -1,6 +1,6 @@
 # API Spec
 
-Phase 6 is still primarily a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local REST/SOAP simulator endpoints. MQ, SFTP, and FTP are driven through admin page actions and embedded local infrastructure.
+Phase 7 is still primarily a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local REST/SOAP simulator endpoints. MQ, SFTP, FTP, and BATCH are driven through admin page actions and local in-process infrastructure.
 
 ## Public/System Endpoints
 
@@ -41,38 +41,32 @@ All `/admin/**` endpoints require authentication.
 | POST | `/admin/interfaces/{id}/mq-config` | Save MQ channel configuration |
 | GET | `/admin/interfaces/{id}/file-transfer-config` | SFTP/FTP configuration form |
 | POST | `/admin/interfaces/{id}/file-transfer-config` | Save SFTP/FTP configuration |
+| GET | `/admin/interfaces/{id}/batch-config` | Batch job configuration form |
+| POST | `/admin/interfaces/{id}/batch-config` | Save Batch job configuration |
 | GET | `/admin/executions` | Execution history list |
 | GET | `/admin/executions/failed` | Failed execution list |
 | GET | `/admin/executions/{id}` | Execution detail with protocol-specific history |
 | POST | `/admin/executions/{id}/retry` | Retry a failed execution |
+| GET | `/admin/batch-runs` | Batch run history list |
+| GET | `/admin/batch-runs/{id}` | Batch run detail with step counts |
 
-## File Transfer Config Fields
+## Batch Config Fields
 
-- `protocolType`: SFTP or FTP
-- `host`: local demo default `127.0.0.1`
-- `port`: default `10022` for SFTP, `10021` for FTP
-- `username`: local demo default `demo`
-- `secretReference`: local demo default `LOCAL_DEMO_FILE_TRANSFER_PASSWORD`
-- `baseRemotePath`: default `/inbox`
-- `localPath`: default `build/file-transfer-demo/local`
-- `fileNamePattern`: optional display/filter hint
-- `passiveMode`: FTP only
-- `timeoutMillis`: 100 to 60000
-- `active`: enables or disables execution
+- `jobType`: `INTERFACE_SETTLEMENT_SUMMARY` or `FAILED_RETRY_AGGREGATION`
+- `jobName`: `interfaceSettlementSummaryJob` or `failedExecutionRetryAggregationJob`
+- `cronExpression`: Spring cron format with seconds
+- `parameterTemplateJson`: default manual/scheduled parameters
+- `enabled`: config-level scheduled execution switch
+- `retryable`: operator hint for retry/rerun behavior
+- `timeoutMillis`: demo timeout value
+- `active`: enables or disables manual execution
 
-## Manual File Transfer Fields
+## Manual Batch Parameters
 
-- `transferDirection`: `UPLOAD` or `DOWNLOAD`
-- `localFileName`: simple file name only
-- `remoteFilePath`: absolute remote path such as `/inbox/sample-upload.txt`
+Manual batch execution uses the generic `requestPayload` field as JSON:
 
-The controller serializes these fields into the execution request payload so retry can repeat the same transfer.
+```json
+{"businessDate":"TODAY","forceFail":false}
+```
 
-## Response Standard For Future JSON APIs
-
-Application JSON APIs should use `ApiResponse<T>`:
-
-- `success`
-- `message`
-- `data`
-- `timestamp`
+Set `forceFail` to `true`, or include `FAIL`, to trigger a controlled failed batch run.

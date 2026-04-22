@@ -7,7 +7,7 @@
 - Local MySQL 8.x
 - IntelliJ IDEA or PowerShell
 
-No Docker, external MQ broker, external SFTP server, or external FTP server is required for Phase 6.
+No Docker, external MQ broker, external SFTP server, external FTP server, or external scheduler is required for Phase 7.
 
 ## Database Setup
 
@@ -35,7 +35,7 @@ Optional:
 $env:INSURANCE_HUB_PORT="8080"
 ```
 
-If the HTTP port is changed, update REST and SOAP endpoint config URLs in the admin UI. MQ and file-transfer demo servers use separate local ports.
+If the HTTP port is changed, update REST and SOAP endpoint config URLs in the admin UI. MQ, file-transfer, and batch demo infrastructure use local in-process settings.
 
 ## Build
 
@@ -54,11 +54,41 @@ Embedded local infrastructure starts inside the app process:
 - Artemis in-vm broker
 - SFTP server on `127.0.0.1:10022`
 - FTP server on `127.0.0.1:10021`
+- Spring Batch infrastructure backed by local MySQL metadata tables
 
 ## Demo Login
 
 - Login ID: `admin`
 - Password: `admin123!`
+
+## Batch Demo
+
+Manual batch output:
+
+- `build/batch-demo/output`
+
+Seeded interfaces:
+
+- `IF_BATCH_SETTLEMENT_001`
+- `IF_BATCH_RETRY_AGG_001`
+
+Manual payload:
+
+```json
+{"businessDate":"TODAY","forceFail":false}
+```
+
+Failure payload:
+
+```json
+{"businessDate":"TODAY","forceFail":true}
+```
+
+Scheduling:
+
+- Batch config rows are seeded with `enabled_yn=0`.
+- App scheduler is disabled by default with `app.batch.scheduler.enabled=false`.
+- To demo scheduling, set `app.batch.scheduler.enabled=true`, enable a batch config in the UI, and use a short cron such as `0/30 * * * * *`.
 
 ## File Transfer Demo Directories
 
@@ -69,26 +99,21 @@ Generated at runtime:
 - SFTP remote root: `build/file-transfer-demo/remote/sftp`
 - FTP remote root: `build/file-transfer-demo/remote/ftp`
 
-Sample files:
-
-- Upload file: `sample-upload.txt`
-- Download remote path: `/outbox/sample-download.txt`
-
-## Verify Phase 6
+## Verify Phase 7
 
 1. Open http://localhost:8080/login.
 2. Log in.
-3. Open `/admin/interfaces`.
-4. Run one REST execution to confirm REST still works.
-5. Run one SOAP execution to confirm SOAP still works.
-6. Run one MQ execution to confirm MQ still works.
-7. Open `IF_SFTP_POLICY_001`.
-8. Confirm SFTP settings point to `127.0.0.1:10022`.
-9. Execute upload with `sample-upload.txt` and `/inbox/sample-upload.txt`.
-10. Execute download with `sample-download.txt` and `/outbox/sample-download.txt`.
-11. Open execution detail and confirm file transfer history is visible.
-12. Repeat the same flow for `IF_FTP_POLICY_001`.
-13. Trigger a failure with a missing local file name and retry the failed execution.
+3. Run one REST execution.
+4. Run one SOAP execution.
+5. Run one MQ execution.
+6. Run one SFTP upload or download.
+7. Run one FTP upload or download.
+8. Open `IF_BATCH_SETTLEMENT_001`.
+9. Confirm Batch settings are visible.
+10. Execute with `{"businessDate":"TODAY","forceFail":false}`.
+11. Open execution detail and confirm batch run history is visible.
+12. Open `/admin/batch-runs`.
+13. Trigger a batch failure with `{"forceFail":true}` and retry the failed execution.
 
 ## Reset Local Database
 

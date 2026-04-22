@@ -1,6 +1,6 @@
 # ERD
 
-Phase 6 extends the schema through `V7__phase_6_real_file_transfer_integration.sql`.
+Phase 7 extends the schema through `V8__phase_7_real_batch_integration.sql`.
 
 ## Logical ERD
 
@@ -13,76 +13,69 @@ erDiagram
     INTERFACE_DEFINITION ||--o| SOAP_ENDPOINT_CONFIG : configures
     INTERFACE_DEFINITION ||--o| MQ_CHANNEL_CONFIG : configures
     INTERFACE_DEFINITION ||--o| FILE_TRANSFER_CONFIG : configures
+    INTERFACE_DEFINITION ||--o| BATCH_JOB_CONFIG : configures
     INTERFACE_EXECUTION ||--o{ INTERFACE_EXECUTION_STEP : contains
     INTERFACE_EXECUTION ||--o{ INTERFACE_RETRY_TASK : creates
     INTERFACE_EXECUTION ||--o{ MQ_MESSAGE_HISTORY : records
     INTERFACE_EXECUTION ||--o{ FILE_TRANSFER_HISTORY : records
+    INTERFACE_EXECUTION ||--o{ BATCH_RUN_HISTORY : records
     FILE_TRANSFER_CONFIG ||--o{ FILE_TRANSFER_HISTORY : emits
+    BATCH_JOB_CONFIG ||--o{ BATCH_RUN_HISTORY : launches
+    BATCH_RUN_HISTORY ||--o{ BATCH_STEP_HISTORY : contains
 
-    FILE_TRANSFER_CONFIG {
+    BATCH_JOB_CONFIG {
         bigint id PK
         bigint interface_definition_id FK
-        varchar transfer_protocol
-        varchar host
-        int port
-        varchar username
-        varchar secret_reference
-        varchar base_remote_path
-        varchar local_path
-        varchar file_name_pattern
-        tinyint passive_mode_yn
+        varchar job_name
+        varchar job_type
+        varchar cron_expression
+        longtext parameter_template_json
+        tinyint enabled_yn
+        int max_parallel_count
+        tinyint retryable_yn
         int timeout_millis
         tinyint active_yn
     }
 
-    FILE_TRANSFER_HISTORY {
+    BATCH_RUN_HISTORY {
         bigint id PK
         bigint interface_execution_id FK
         bigint interface_definition_id FK
-        bigint file_transfer_config_id FK
-        varchar protocol_type
-        varchar transfer_direction
-        varchar local_file_name
-        varchar local_file_path
-        varchar remote_file_path
-        bigint file_size_bytes
-        varchar transfer_status
-        bigint latency_millis
+        bigint batch_job_config_id FK
+        bigint spring_batch_job_execution_id
+        varchar job_name
+        varchar job_type
+        longtext job_parameters_json
+        varchar batch_status
+        bigint read_count
+        bigint write_count
+        bigint skip_count
+        bigint latency_ms
         varchar error_message
-        varchar checksum_sha256
-        varchar content_summary
+        varchar output_summary
     }
 
-    INTERFACE_EXECUTION {
+    BATCH_STEP_HISTORY {
         bigint id PK
-        varchar execution_no UK
-        bigint interface_definition_id FK
-        varchar protocol_type
-        varchar trigger_type
-        varchar status
-        longtext request_payload
-        varchar request_url
-        varchar request_method
-        varchar protocol_action
-        longtext response_payload
-        bigint latency_ms
-        varchar error_code
-        varchar error_message
+        bigint batch_run_history_id FK
+        varchar step_name
+        varchar step_status
+        bigint read_count
+        bigint write_count
+        bigint commit_count
+        bigint rollback_count
+        bigint skip_count
     }
 ```
 
-## Phase 6 Migration Notes
+## Phase 7 Migration Notes
 
-V7 adds:
+V8 adds:
 
-- `file_transfer_config.host`
-- `file_transfer_config.username`
-- `file_transfer_config.secret_reference`
-- `file_transfer_config.base_remote_path`
-- `file_transfer_config.timeout_millis`
-- `file_transfer_config.active_yn`
-- `file_transfer_history`
-- sample SFTP interface `IF_SFTP_POLICY_001`
-- sample FTP interface `IF_FTP_POLICY_001`
+- batch job config fields for job type, parameters, retryability, timeout, and active flag
+- `batch_run_history`
+- `batch_step_history`
+- Spring Batch metadata tables owned by Flyway
+- sample batch interfaces `IF_BATCH_SETTLEMENT_001` and `IF_BATCH_RETRY_AGG_001`
 
-`file_transfer_history` records transfer direction, local and remote paths, size, checksum, latency, status, and errors so operators can inspect file-transfer results from execution detail pages.
+Spring Batch metadata tables are operational framework tables. Portfolio-facing batch visibility is stored in `batch_run_history` and `batch_step_history`.

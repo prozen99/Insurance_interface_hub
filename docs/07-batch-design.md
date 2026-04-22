@@ -2,43 +2,67 @@
 
 ## Batch Role
 
-Batch support will handle scheduled or manually triggered interface executions that are not immediate request/response flows. Examples include daily policy exports, monthly settlement files, partner reconciliation, and retry sweeps.
+Batch support handles scheduled or manually triggered interface executions that are not immediate request/response flows. Phase 7 implements this with Spring Batch and keeps results visible through the same admin execution history used by REST, SOAP, MQ, SFTP, and FTP.
 
-## Phase 0 Baseline
+## Phase 7 Components
 
-Phase 0 includes:
+- `BatchJobConfig`: DB-backed job configuration linked to an interface definition.
+- `BatchInterfaceExecutor`: protocol executor for `ProtocolType.BATCH`.
+- `BatchExecutionService`: launches Spring Batch jobs and records results.
+- `BatchScheduleService`: optional local scheduler for enabled configs.
+- `BatchRunHistory`: portfolio-facing batch run record.
+- `BatchStepHistory`: step-level counts and status.
+- Spring Batch metadata tables: framework-owned operational metadata created by Flyway.
 
-- `spring-boot-starter-batch`
-- `batch_job_config` table
-- Batch package placeholder
-- `spring.batch.job.enabled=false` to avoid accidental startup execution
+## Demo Jobs
 
-No real batch job is implemented yet.
+`interfaceSettlementSummaryJob`:
 
-## Future Batch Components
+- Summarizes today’s interface executions by protocol and status.
+- Writes a local output text file.
+- Records read/write counts.
 
-- Batch job registry
-- Job parameter builder
-- Manual run service
-- Scheduler integration
-- Execution history integration
-- Failure retry integration
-- Operator-visible run logs
+`failedExecutionRetryAggregationJob`:
 
-## Batch Job Configuration
+- Counts today’s failed executions.
+- Counts pending retry tasks.
+- Writes a local output text file.
 
-`batch_job_config` stores:
+## Job Parameters
 
-- Linked interface definition
-- Job name
-- Cron expression
-- Enabled flag
-- Max parallel count
+Default manual payload:
+
+```json
+{"businessDate":"TODAY","forceFail":false}
+```
+
+Rules:
+
+- `businessDate=TODAY` resolves to the local current date.
+- `forceFail=true` triggers a controlled job failure.
+- A unique `run.id` is added automatically so reruns do not collide.
+
+## Scheduling
+
+Scheduling is disabled by default:
+
+```yaml
+app:
+  batch:
+    scheduler:
+      enabled: false
+```
+
+To demo scheduling:
+
+1. Enable `app.batch.scheduler.enabled`.
+2. Enable a batch config in the admin UI.
+3. Use a short cron such as `0/30 * * * * *`.
 
 ## Design Rules
 
-- Batch jobs should create `interface_execution` rows before doing business work.
-- Long-running jobs should record major steps in `interface_execution_step`.
-- Batch jobs should not store raw file credentials.
-- Schedules should be disabled by default until explicitly enabled by an admin.
-- Job restart behavior must be documented when real jobs are added.
+- Batch jobs create normal `interface_execution` records through the common engine.
+- Spring Batch metadata is managed by Flyway, not automatic initialization.
+- Batch launch must not happen inside a broad interface execution transaction.
+- Retry reruns the original failed payload for auditability.
+- Production calendars, locks, partitions, and external schedulers are future concerns.

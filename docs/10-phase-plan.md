@@ -46,7 +46,6 @@ Status: Complete
 - Real SOAP-over-HTTP executor.
 - Local SOAP simulator API.
 - SOAP request XML, response XML, SOAPAction, HTTP status, latency, and fault visibility.
-- SOAP retry through the common execution engine.
 
 ## Phase 5 - Real MQ Integration
 
@@ -56,37 +55,40 @@ Status: Complete
 - Embedded in-vm Artemis broker for local no-Docker demos.
 - Real JMS text message publish and consume flow.
 - MQ message history with separate publish and consume statuses.
-- MQ retry through the common execution engine.
 
 ## Phase 6 - Real SFTP/FTP Integration
 
-Status: Complete in the current codebase
+Status: Complete
 
 - SFTP/FTP file-transfer configuration UI and validation.
 - Embedded local SFTP and FTP servers for no-Docker demos.
 - Real upload and download flows.
-- Safe project-local demo directories.
-- File transfer history with local path, remote path, size, checksum, latency, and errors.
-- Execution detail visibility for SFTP/FTP results.
-- Retry through the common execution engine.
-- REST, SOAP, and MQ regression paths preserved.
+- File transfer history and retry support.
+
+## Phase 7 - Real Batch Integration
+
+Status: Complete in the current codebase
+
+- Batch job configuration UI and validation.
+- Real Spring Batch manual launch.
+- Optional local scheduler support.
+- Demo jobs for interface settlement summary and failed retry aggregation.
+- Spring Batch metadata tables managed by Flyway.
+- Batch run and step history.
+- Execution detail visibility for job parameters, read/write counts, status, output, and errors.
+- Retry/rerun through the common execution engine.
+- REST, SOAP, MQ, SFTP, and FTP regression paths preserved.
 
 Exit criteria:
 
 - `.\gradlew.bat build` succeeds.
 - App starts with the local profile.
 - Admin login works.
-- REST, SOAP, and MQ still work.
-- SFTP and FTP config pages are reachable.
-- Manual SFTP/FTP upload and download perform real local transfers.
-- Execution detail shows file transfer history.
-- Failed file-transfer execution can be retried.
-
-## Phase 7 - Batch
-
-- Add batch job configuration UI.
-- Implement scheduled and manual batch execution.
-- Integrate batch runs with interface execution history.
+- REST, SOAP, MQ, SFTP, and FTP still work.
+- Batch config page is reachable.
+- Manual Batch execution runs a real Spring Batch job.
+- Execution detail shows batch run information.
+- Batch Runs page is navigable.
 
 ## Phase 8 - Monitoring/Dashboard
 

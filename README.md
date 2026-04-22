@@ -2,30 +2,30 @@
 
 Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
 
-Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 6 adds real SFTP and FTP file transfer paths. REST, SOAP, MQ, SFTP, and FTP now execute through local demo infrastructure, while BATCH intentionally remains mock-driven.
+Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across multiple integration protocols. Phase 7 adds real Spring Batch execution. REST, SOAP, MQ, SFTP, FTP, and BATCH now execute through local demo infrastructure and share one common execution history.
 
 ## Current Phase
 
-Phase 6 - Real SFTP/FTP integration, file transfer history, and admin file transfer visibility
+Phase 7 - Real Batch integration, manual and scheduled job execution, and admin batch visibility
 
 Implemented:
 
 - DB-backed Spring Security form login
 - Partner company, internal system, and interface definition CRUD
 - Common execution engine, execution history, step logs, retry tasks, and dashboard metrics
-- Real REST, SOAP, and MQ execution paths
+- Real REST, SOAP, MQ, SFTP, FTP, and BATCH execution paths
 - Embedded in-vm Artemis broker for MQ
 - Embedded local SFTP and FTP demo servers without Docker
-- SFTP/FTP configuration UI and real upload/download execution
-- File transfer history with local path, remote path, size, checksum, latency, and error details
-- Retry flow for failed REST, SOAP, MQ, SFTP, and FTP executions
-- Mock executor retained for BATCH
+- Real Spring Batch jobs for interface settlement summary and failed retry aggregation
+- Protocol-specific configuration UI for REST, SOAP, MQ, SFTP/FTP, and Batch
+- File transfer history and batch run history
+- Retry flow for failed executions across all supported protocols
 
 Still intentionally out of scope:
 
-- Spring Batch scheduling and job launching
-- Production SFTP/FTP credential storage
+- Production credential vaulting
 - External MQ broker topology and durable production queues
+- Production batch calendars, distributed locks, partitioning, and remote scheduling
 
 ## Demo Interfaces
 
@@ -34,23 +34,24 @@ Still intentionally out of scope:
 - `IF_MQ_POLICY_001`: embedded Artemis publish/consume demo
 - `IF_SFTP_POLICY_001`: embedded SFTP upload/download demo
 - `IF_FTP_POLICY_001`: embedded FTP upload/download demo
+- `IF_BATCH_SETTLEMENT_001`: daily interface settlement summary batch
+- `IF_BATCH_RETRY_AGG_001`: failed execution retry aggregation batch
 
-## File Transfer Demo
+## Local Demo Infrastructure
 
-The app creates runtime demo files under:
+- MQ: embedded in-vm Artemis
+- SFTP: `127.0.0.1:10022`
+- FTP: `127.0.0.1:10021`
+- File transfer runtime root: `build/file-transfer-demo`
+- Batch output directory: `build/batch-demo/output`
 
-- `build/file-transfer-demo/local/input`
-- `build/file-transfer-demo/local/download`
-- `build/file-transfer-demo/remote/sftp`
-- `build/file-transfer-demo/remote/ftp`
+Manual batch parameter sample:
 
-Sample upload file:
+```json
+{"businessDate":"TODAY","forceFail":false}
+```
 
-- `sample-upload.txt`
-
-Sample download path:
-
-- `/outbox/sample-download.txt`
+Set `forceFail` to `true`, or include `FAIL` in the manual payload, to demonstrate a controlled batch failure and retry.
 
 ## Supported Protocol Classification
 
@@ -59,7 +60,7 @@ Sample download path:
 - MQ: real local JMS publish/consume execution through embedded Artemis
 - SFTP: real local upload/download through embedded SFTP server
 - FTP: real local upload/download through embedded FTP server
-- BATCH: mock executor
+- BATCH: real local Spring Batch job launch with run and step history
 
 ## Tech Baseline
 
@@ -69,6 +70,7 @@ Sample download path:
 - Thymeleaf
 - Spring Security form login
 - Spring Data JPA
+- Spring Batch
 - Spring JMS with embedded Artemis
 - Spring Integration FTP/SFTP
 - Apache MINA SSHD and Apache FtpServer for local demo servers
@@ -108,6 +110,7 @@ Open:
 - Dashboard: http://localhost:8080/admin
 - Interfaces: http://localhost:8080/admin/interfaces
 - Executions: http://localhost:8080/admin/executions
+- Batch Runs: http://localhost:8080/admin/batch-runs
 - Smoke API: http://localhost:8080/api/smoke
 
 ## Local Demo Login
@@ -146,6 +149,6 @@ The database stores a BCrypt hash, not the plain password.
 - Phase 4: real SOAP integration and simulator
 - Phase 5: real MQ integration with embedded Artemis
 - Phase 6: real SFTP/FTP integration with local demo servers
-- Phase 7: Batch
+- Phase 7: real Batch integration with manual and scheduled launch support
 - Phase 8: monitoring/dashboard
 - Phase 9: testing/performance/final polish

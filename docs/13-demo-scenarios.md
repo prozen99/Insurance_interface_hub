@@ -6,12 +6,12 @@
 2. Explain the business goal.
 3. Show the phase roadmap.
 4. Show the common execution engine.
-5. Show protocol packages for REST, SOAP, MQ, SFTP, and FTP.
+5. Show protocol packages for REST, SOAP, MQ, SFTP, FTP, and BATCH.
 
 What this proves:
 
 - The project has clear business context.
-- Five protocol paths are real while still sharing one execution engine.
+- All six planned protocol paths now have real local execution.
 
 ## Scenario 2 - Login And Dashboard
 
@@ -25,82 +25,74 @@ What this proves:
 - DB-backed form login still works.
 - Dashboard shows execution metrics.
 
-## Scenario 3 - REST/SOAP/MQ Regression
+## Scenario 3 - Existing Protocol Regression
 
 1. Open `IF_REST_POLICY_001` and execute the sample payload.
 2. Open `IF_SOAP_POLICY_001` and execute the sample XML.
 3. Open `IF_MQ_POLICY_001` and execute the sample message.
+4. Open `IF_SFTP_POLICY_001` and run upload/download.
+5. Open `IF_FTP_POLICY_001` and run upload/download.
 
 What this proves:
 
-- Phase 6 did not break existing real protocols.
+- Phase 7 did not break existing real protocols.
 
-## Scenario 4 - SFTP Configuration
+## Scenario 4 - Batch Configuration
 
-1. Open `IF_SFTP_POLICY_001`.
-2. Review the SFTP settings panel.
-3. Click Edit SFTP config.
-4. Confirm host, port, username, secret reference, paths, timeout, and active flag.
-
-What this proves:
-
-- SFTP-specific settings are visible and editable.
-
-## Scenario 5 - SFTP Upload And Download
-
-1. Open `IF_SFTP_POLICY_001`.
-2. Upload `sample-upload.txt` to `/inbox/sample-upload.txt`.
-3. Open execution detail and review file transfer history.
-4. Download `/outbox/sample-download.txt` as `sample-download.txt`.
-5. Confirm the downloaded file appears under `build/file-transfer-demo/local/download`.
+1. Open `IF_BATCH_SETTLEMENT_001`.
+2. Review the Batch settings panel.
+3. Click Configure Batch.
+4. Confirm job type, job name, cron expression, active flag, schedule enabled flag, and parameter template.
 
 What this proves:
 
-- SFTP uses a real local protocol client and embedded server.
-- File size, checksum, paths, latency, and status are persisted.
+- Batch-specific settings are visible and editable.
 
-## Scenario 6 - FTP Upload And Download
+## Scenario 5 - Manual Batch Success
 
-1. Open `IF_FTP_POLICY_001`.
-2. Upload `sample-upload.txt` to `/inbox/sample-upload.txt`.
-3. Download `/outbox/sample-download.txt` as `sample-download.txt`.
-4. Review execution details.
-
-What this proves:
-
-- FTP uses a real local protocol client and embedded server.
-- FTP passive mode is configurable.
-
-## Scenario 7 - File Transfer Failure And Retry
-
-1. Open an SFTP or FTP interface.
-2. Enter a missing local file name such as `missing.txt`.
-3. Execute upload and confirm FAILED.
-4. Create `missing.txt` under `build/file-transfer-demo/local/input`.
-5. Open the failed execution detail.
-6. Click Retry.
+1. Open `IF_BATCH_SETTLEMENT_001`.
+2. Execute with `{"businessDate":"TODAY","forceFail":false}`.
+3. Open execution detail.
+4. Review Batch run history, step logs, read/write counts, and output summary.
+5. Open `/admin/batch-runs`.
 
 What this proves:
 
-- Failure handling and retry task creation work for file transfers.
-- Execution detail exposes the cause clearly.
+- Manual BATCH execution launches a real Spring Batch job.
+- Batch results are persisted and visible to operators.
 
-## Scenario 8 - Remaining Mock Boundary
+## Scenario 6 - Batch Failure And Retry
 
-1. Create or open a BATCH interface.
-2. Execute with a normal payload.
-3. Execute with a payload containing `FAIL`.
+1. Open `IF_BATCH_SETTLEMENT_001`.
+2. Execute with `{"businessDate":"TODAY","forceFail":true}`.
+3. Confirm execution status is FAILED.
+4. Open execution detail.
+5. Change the original payload path by retrying after using a non-failing payload in a new run, or demo retry with a failure payload to explain deterministic failure.
 
 What this proves:
 
-- BATCH remains safely mock-driven until Phase 7.
+- Batch failure is captured with an error message and retry task.
+- Rerun/retry behavior is understandable from execution history.
 
-## Scenario 9 - Execution History
+## Scenario 7 - Scheduled Batch Demo
+
+1. Set `app.batch.scheduler.enabled=true`.
+2. Enable a batch config in the Batch config form.
+3. Use cron `0/30 * * * * *`.
+4. Wait for the scheduler poll.
+5. Open `/admin/batch-runs`.
+
+What this proves:
+
+- Scheduled execution uses the same common execution and history model as manual execution.
+
+## Scenario 8 - Unified Execution History
 
 1. Open `/admin/executions`.
-2. Filter by SFTP or FTP.
-3. Open an execution detail.
+2. Filter by BATCH.
+3. Open a Batch execution detail.
+4. Compare it with REST, SOAP, MQ, SFTP, or FTP execution details.
 
 What this proves:
 
-- Operators can inspect file transfers from the same execution history used by every protocol.
+- Operators can inspect every protocol through one consistent execution history.

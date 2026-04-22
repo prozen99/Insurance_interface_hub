@@ -1,16 +1,17 @@
 # Screen Spec
 
-Phase 6 uses Thymeleaf for the admin UI and adds SFTP/FTP configuration, manual file-transfer execution fields, and transfer history visibility.
+Phase 7 uses Thymeleaf for the admin UI and adds Batch configuration, manual batch execution, batch run history, and batch result visibility.
 
 ## Common Layout
 
 Admin pages share:
 
 - Left navigation
-- Phase 6 product branding
+- Phase 7 product branding
 - Logout button
 - Flash success/error messages
 - Table-based enterprise admin layout
+- Batch Runs navigation item
 
 ## Interface Detail
 
@@ -23,55 +24,49 @@ Sections:
 - Manual execution form
 - Recent execution table
 
-SFTP/FTP interface behavior:
+Batch interface behavior:
 
-- Shows host, port, username, secret reference, base remote path, local path, timeout, active flag, and FTP passive mode.
-- Provides an Edit SFTP/FTP config button.
-- Shows file-transfer fields instead of the generic payload textarea.
-- Upload reads from local `input`; download writes to local `download`.
+- Shows job type, job name, cron expression, schedule enabled flag, retryable flag, timeout, active flag, and parameter template JSON.
+- Provides an Edit Batch config button.
+- Uses the generic request payload textarea for job parameters.
+- Defaults to the configured parameter template.
 
-## File Transfer Config Form
+## Batch Config Form
 
-Path: `/admin/interfaces/{id}/file-transfer-config`
+Path: `/admin/interfaces/{id}/batch-config`
 
 Fields:
 
-- Host
-- Port
-- Username
-- Secret reference
-- Base remote path
-- Local path
-- File name pattern
+- Job type
+- Spring Batch job name
+- Cron expression
 - Timeout millis
-- FTP passive mode
+- Max parallel count
+- Schedule enabled
+- Retryable
 - Active for manual execution
+- Parameter template JSON
 
 Validation:
 
-- Host, port, username, secret reference, base remote path, and local path are required.
-- Base remote path must start with `/`.
-- Timeout must be between 100 and 60000 ms.
+- Job type and job name are required.
+- Parameter template must be valid JSON.
+- Timeout must be between 1000 and 3600000 ms.
+- Phase 7 keeps max parallel count at 1.
 
-## Manual File Transfer Execution
+## Manual Batch Execution
 
-Fields:
+Payload example:
 
-- Transfer direction: `UPLOAD` or `DOWNLOAD`
-- Local file name
-- Remote file path
+```json
+{"businessDate":"TODAY","forceFail":false}
+```
 
-Default upload demo:
+Failure demo:
 
-- Direction: `UPLOAD`
-- Local file: `sample-upload.txt`
-- Remote path: `/inbox/sample-upload.txt`
-
-Default download demo:
-
-- Direction: `DOWNLOAD`
-- Local file: `sample-download.txt`
-- Remote path: `/outbox/sample-download.txt`
+```json
+{"businessDate":"TODAY","forceFail":true}
+```
 
 ## Execution Detail
 
@@ -81,6 +76,7 @@ Sections:
 
 - Execution summary
 - Protocol exchange details
+- Batch run history for BATCH executions
 - File transfer history for SFTP/FTP executions
 - MQ message history for MQ executions
 - Step logs
@@ -88,15 +84,39 @@ Sections:
 - Response payload
 - Retry tasks
 
-File transfer detail shows:
+Batch detail shows:
 
-- Protocol
-- Direction
-- Local file name and path
-- Remote file path
-- Transfer status
-- File size
+- Job name
+- Job type
+- Batch status
+- Read/write/skip counts
 - Latency
+- Output summary
 - Error message
+- Link to the Batch Run detail page
 
-Failed executions show a retry button.
+## Batch Run History
+
+Path: `/admin/batch-runs`
+
+Shows recent batch runs with:
+
+- Job name and type
+- Interface code
+- Status
+- Read/write/skip counts
+- Start time
+- Link to execution detail
+
+## Batch Run Detail
+
+Path: `/admin/batch-runs/{id}`
+
+Shows:
+
+- Run summary
+- Spring Batch job execution id
+- Exit code
+- Job parameters
+- Output summary
+- Step-level read/write/skip/commit/rollback counts

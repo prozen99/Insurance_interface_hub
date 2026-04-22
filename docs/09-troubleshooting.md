@@ -506,3 +506,126 @@ Prevention:
 
 - Keep local demo files under the project-local demo directory.
 - Do not expose arbitrary filesystem paths through the admin form.
+
+## Spring Batch Metadata Tables Missing
+
+Symptom:
+
+- Batch execution fails at launch.
+- Error mentions missing `BATCH_JOB_INSTANCE`, `BATCH_JOB_EXECUTION`, or sequence tables.
+
+Cause:
+
+- Spring Batch needs metadata tables, and the project keeps `spring.batch.jdbc.initialize-schema=never` so Flyway owns schema creation.
+
+Fix:
+
+- Apply `V8__phase_7_real_batch_integration.sql`.
+- Confirm Flyway has migrated the local database to version 8.
+
+Prevention:
+
+- Do not enable Spring Batch auto schema initialization for this project.
+- Keep Batch metadata changes in Flyway migrations.
+
+## Duplicate Spring Batch Job Parameters
+
+Symptom:
+
+- A manual rerun fails with a message that a job instance already exists.
+
+Cause:
+
+- Spring Batch identifies job instances by identifying parameters.
+- Running with identical parameters can collide unless a unique run parameter is added.
+
+Fix:
+
+- Phase 7 adds a unique `run.id` parameter for every launch.
+
+Prevention:
+
+- Keep `run.id` or an equivalent unique launch parameter in future Batch launch code.
+
+## Launching Batch Inside A Long Transaction
+
+Symptom:
+
+- Batch launch can fail with transaction state errors or lock unexpectedly.
+
+Cause:
+
+- Spring Batch job repository work should not be launched while a caller holds a broad business transaction.
+
+Fix:
+
+- Phase 7 records the running `interface_execution` first, invokes the protocol executor outside that transaction, then records results afterward.
+
+Prevention:
+
+- Do not wrap external protocol calls or Spring Batch launches in one large database transaction.
+
+## Batch Scheduler Does Not Fire
+
+Symptom:
+
+- A batch config has a cron expression, but no scheduled execution appears.
+
+Cause:
+
+- The app-level scheduler is disabled by default, or the batch config `enabled` flag is off.
+
+Fix:
+
+- Set `app.batch.scheduler.enabled=true`.
+- Enable the batch config in the admin UI.
+- Use a six-field Spring cron expression such as `0/30 * * * * *`.
+
+Prevention:
+
+- Keep scheduler assumptions explicit in the runbook.
+- Use manual execution for demos when timing is not the focus.
+
+## Controlled Batch Failure Keeps Failing On Retry
+
+Symptom:
+
+- A failed batch execution is retried, but the retry fails with the same forced failure.
+
+Cause:
+
+- Retry reuses the original request payload for auditability.
+- If the original payload contains `FAIL` or `forceFail=true`, retry repeats that same deterministic failure.
+
+Fix:
+
+- Run a new manual execution with `forceFail=false` to demonstrate recovery.
+- Use retry to demonstrate audit linkage when the original input is intentionally unchanged.
+
+Prevention:
+
+- Explain retry as "rerun the same failed request" during demos.
+- Use a transient operational failure for future retry demos if different retry behavior is needed.
+
+## Batch `forceFail=false` Still Fails
+
+Symptom:
+
+- A manual batch execution with payload `{"businessDate":"TODAY","forceFail":false}` fails.
+- The execution detail shows Spring Batch parameters with `forceFail=true`.
+
+Cause:
+
+- The initial controlled-failure detector searched the entire raw JSON text for `FAIL`.
+- The key name `forceFail` itself contains `FAIL`, so even a false value was treated as a failure signal.
+
+Fix:
+
+- Parse JSON payloads first.
+- Treat `forceFail=true` as explicit failure.
+- For JSON payloads, scan values rather than field names for the demo `FAIL` token.
+
+Prevention:
+
+- Add regression tests that capture launched Spring Batch parameters.
+- Keep demo failure rules narrow enough that control field names cannot trigger them accidentally.

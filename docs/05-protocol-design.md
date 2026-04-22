@@ -1,73 +1,66 @@
 # Protocol Design
 
-## Phase 6 Purpose
+## Phase 7 Purpose
 
-Phase 6 proves SFTP and FTP as real file-transfer protocol paths. REST remains real from Phase 3, SOAP from Phase 4, and MQ from Phase 5. BATCH remains mock-driven.
+Phase 7 proves Batch as the final real protocol path. REST remains real from Phase 3, SOAP from Phase 4, MQ from Phase 5, and SFTP/FTP from Phase 6.
 
 ## Current Executors
 
-| Protocol | Executor | Phase 6 Behavior |
+| Protocol | Executor | Phase 7 Behavior |
 | --- | --- | --- |
 | REST | `RestInterfaceExecutor` | Real HTTP calls with Spring `RestClient` |
 | SOAP | `SoapInterfaceExecutor` | Real SOAP XML over HTTP |
 | MQ | `MqInterfaceExecutor` | Real JMS text message publish/consume through embedded Artemis |
 | SFTP | `SftpInterfaceExecutor` | Real upload/download through embedded SFTP server |
 | FTP | `FtpInterfaceExecutor` | Real upload/download through embedded FTP server |
-| BATCH | `BatchMockInterfaceExecutor` | Mock |
+| BATCH | `BatchInterfaceExecutor` | Real Spring Batch job launch |
 
-## File Transfer Execution Rules
+## Batch Execution Rules
 
-`FileTransferExecutionService`:
+`BatchExecutionService`:
 
-1. Loads active SFTP/FTP configuration.
-2. Parses transfer direction, local file name, and remote path from the execution payload.
-3. Resolves local files under `build/file-transfer-demo/local`.
-4. Uses a protocol-specific client selected by `FileTransferClientFactory`.
-5. Executes upload or download.
-6. Records `FileTransferHistory`.
-7. Returns SUCCESS with size, checksum, summary, and latency.
-8. Returns FAILED for missing local files, path traversal attempts, connection errors, transfer errors, or missing remote files.
+1. Loads active Batch configuration.
+2. Resolves the configured Spring Batch job by name.
+3. Parses manual payload or parameter template JSON.
+4. Adds unique run parameters for rerun support.
+5. Launches the job through `JobLauncher`.
+6. Records `BatchRunHistory`.
+7. Records `BatchStepHistory`.
+8. Returns SUCCESS when Spring Batch status is `COMPLETED`.
+9. Returns FAILED for launch errors, job failures, invalid parameters, or unknown job names.
 
-## Local Demo Servers
+## Demo Batch Jobs
 
-SFTP:
+`interfaceSettlementSummaryJob`:
 
-- Embedded Apache MINA SSHD server
-- Default host `127.0.0.1`
-- Default port `10022`
+- Summarizes today’s executions by protocol and status.
+- Writes output under `build/batch-demo/output`.
+- Records read/write counts from summary rows.
 
-FTP:
+`failedExecutionRetryAggregationJob`:
 
-- Embedded Apache FtpServer
-- Default host `127.0.0.1`
-- Default port `10021`
-- Passive mode enabled by default
+- Counts today’s failed executions.
+- Counts pending retry tasks.
+- Writes output under `build/batch-demo/output`.
 
-Both servers use local demo directories under `build/file-transfer-demo` and a local-only credential reference. No Docker or external server install is required.
+Controlled failure:
 
-## Safe Local File Strategy
+- `{"forceFail":true}` fails the job.
+- A manual payload containing `FAIL` also sets `forceFail=true`.
 
-- Upload reads from `build/file-transfer-demo/local/input`
-- Download writes to `build/file-transfer-demo/local/download`
-- SFTP remote root is `build/file-transfer-demo/remote/sftp`
-- FTP remote root is `build/file-transfer-demo/remote/ftp`
-- Local file names must be simple file names, not paths
-- Remote paths cannot contain `..`
+## Scheduling Rules
+
+Scheduling is intentionally local-demo-friendly:
+
+- `app.batch.scheduler.enabled=false` by default.
+- Admins can enable a batch config in the UI.
+- When the app scheduler property is enabled, `BatchScheduleService` polls enabled configs.
+- Scheduled runs use the same common execution path as manual runs.
 
 ## Existing Protocol Rules
 
 - REST treats HTTP 2xx as success.
 - SOAP treats HTTP 2xx without SOAP Fault as success.
 - MQ distinguishes publish success from consume/process success.
-- BATCH uses the deterministic mock rule.
-
-## Future Real Adapter Rules
-
-When Batch is added:
-
-- Keep `InterfaceExecutionService` as the orchestration layer.
-- Keep protocol-specific details inside `com.insurancehub.protocol.*`.
-- Record execution steps consistently.
-- Avoid logging secrets or sensitive payloads.
-- Use timeouts for external calls.
-- Preserve retry behavior unless a protocol needs documented exceptions.
+- SFTP/FTP record transfer metadata and reject unsafe paths.
+- BATCH records Spring Batch job and step metadata.
