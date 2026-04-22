@@ -28,7 +28,7 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceDefiniti
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceExecutionStepRepository;
 import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTaskRepository;
-import com.insurancehub.protocol.batch.BatchMockInterfaceExecutor;
+import com.insurancehub.testsupport.TestTransactionManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,15 +55,17 @@ class InterfaceExecutionServiceTest {
 
     @BeforeEach
     void setUp() {
-        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(new BatchMockInterfaceExecutor()));
+        InterfaceExecutorFactory executorFactory = new InterfaceExecutorFactory(List.of(new StubBatchExecutor()));
         service = new InterfaceExecutionService(
                 interfaceDefinitionRepository,
                 interfaceExecutionRepository,
                 interfaceExecutionStepRepository,
                 interfaceRetryTaskRepository,
-                executorFactory
+                executorFactory,
+                TestTransactionManager.noOp()
         );
         when(interfaceExecutionRepository.existsByExecutionNo(any())).thenReturn(false);
+        when(interfaceExecutionRepository.saveAndFlush(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(interfaceExecutionRepository.save(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -110,6 +112,7 @@ class InterfaceExecutionServiceTest {
         InterfaceRetryTask retryTask = InterfaceRetryTask.waitingFor(original, LocalDateTime.now());
 
         when(interfaceExecutionRepository.findDetailById(10L)).thenReturn(Optional.of(original));
+        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
         when(interfaceRetryTaskRepository.findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(10L, RetryStatus.WAITING))
                 .thenReturn(Optional.of(retryTask));
 
@@ -123,7 +126,7 @@ class InterfaceExecutionServiceTest {
     }
 
     private InterfaceDefinition activeDefinition(String code) {
-        return InterfaceDefinition.create(
+        InterfaceDefinition definition = InterfaceDefinition.create(
                 code,
                 "Policy status batch interface",
                 ProtocolType.BATCH,
@@ -133,5 +136,20 @@ class InterfaceExecutionServiceTest {
                 InternalSystem.create("POLICY_CORE", "Policy Core System", "Insurance Platform Team", MasterStatus.ACTIVE, null),
                 null
         );
+        ReflectionTestUtils.setField(definition, "id", 1L);
+        return definition;
+    }
+
+    private static class StubBatchExecutor extends AbstractMockInterfaceExecutor {
+
+        @Override
+        public ProtocolType supports() {
+            return ProtocolType.BATCH;
+        }
+
+        @Override
+        protected String mockSuccessMessage() {
+            return "Test batch executor completed.";
+        }
     }
 }

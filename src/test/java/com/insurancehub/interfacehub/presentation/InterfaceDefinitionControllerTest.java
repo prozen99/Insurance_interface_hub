@@ -20,6 +20,7 @@ import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.interfacehub.domain.entity.InternalSystem;
 import com.insurancehub.interfacehub.domain.entity.PartnerCompany;
+import com.insurancehub.protocol.batch.application.BatchJobConfigService;
 import com.insurancehub.protocol.filetransfer.application.FileTransferConfigService;
 import com.insurancehub.protocol.filetransfer.application.FileTransferPayloadCodec;
 import com.insurancehub.protocol.mq.application.MqChannelConfigService;
@@ -67,6 +68,9 @@ class InterfaceDefinitionControllerTest {
 
     @MockitoBean
     private FileTransferPayloadCodec fileTransferPayloadCodec;
+
+    @MockitoBean
+    private BatchJobConfigService batchJobConfigService;
 
     @Test
     @WithMockUser(username = "admin")

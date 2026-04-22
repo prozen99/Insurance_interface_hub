@@ -45,6 +45,7 @@ import com.insurancehub.protocol.filetransfer.presentation.form.FileTransferConf
 import com.insurancehub.protocol.ftp.FtpFileTransferClient;
 import com.insurancehub.protocol.sftp.SftpFileTransferClient;
 import com.insurancehub.protocol.sftp.SftpInterfaceExecutor;
+import com.insurancehub.testsupport.TestTransactionManager;
 import org.apache.ftpserver.FtpServer;
 import org.apache.sshd.server.SshServer;
 import org.junit.jupiter.api.AfterEach;
@@ -122,9 +123,11 @@ class InterfaceExecutionFileTransferRetryTest {
                 interfaceExecutionRepository,
                 interfaceExecutionStepRepository,
                 interfaceRetryTaskRepository,
-                new InterfaceExecutorFactory(List.of(new SftpInterfaceExecutor(fileTransferExecutionService)))
+                new InterfaceExecutorFactory(List.of(new SftpInterfaceExecutor(fileTransferExecutionService))),
+                TestTransactionManager.noOp()
         );
         when(interfaceExecutionRepository.existsByExecutionNo(any())).thenReturn(false);
+        when(interfaceExecutionRepository.saveAndFlush(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(interfaceExecutionRepository.save(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(fileTransferHistoryRepository.save(any(FileTransferHistory.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -161,6 +164,7 @@ class InterfaceExecutionFileTransferRetryTest {
         InterfaceRetryTask retryTask = InterfaceRetryTask.waitingFor(original, LocalDateTime.now());
 
         when(interfaceExecutionRepository.findDetailById(10L)).thenReturn(Optional.of(original));
+        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
         when(interfaceRetryTaskRepository.findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(10L, RetryStatus.WAITING))
                 .thenReturn(Optional.of(retryTask));
         when(fileTransferConfigService.getActiveForExecution(definition)).thenReturn(config(definition));

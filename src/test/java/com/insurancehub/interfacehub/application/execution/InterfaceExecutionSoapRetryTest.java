@@ -34,6 +34,7 @@ import com.insurancehub.interfacehub.infrastructure.repository.InterfaceRetryTas
 import com.insurancehub.protocol.soap.SoapInterfaceExecutor;
 import com.insurancehub.protocol.soap.application.SoapEndpointConfigService;
 import com.insurancehub.protocol.soap.domain.entity.SoapEndpointConfig;
+import com.insurancehub.testsupport.TestTransactionManager;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -79,9 +80,11 @@ class InterfaceExecutionSoapRetryTest {
                 interfaceExecutionRepository,
                 interfaceExecutionStepRepository,
                 interfaceRetryTaskRepository,
-                executorFactory
+                executorFactory,
+                TestTransactionManager.noOp()
         );
         when(interfaceExecutionRepository.existsByExecutionNo(any())).thenReturn(false);
+        when(interfaceExecutionRepository.saveAndFlush(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(interfaceExecutionRepository.save(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
@@ -109,6 +112,7 @@ class InterfaceExecutionSoapRetryTest {
         InterfaceRetryTask retryTask = InterfaceRetryTask.waitingFor(original, LocalDateTime.now());
 
         when(interfaceExecutionRepository.findDetailById(20L)).thenReturn(Optional.of(original));
+        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
         when(interfaceRetryTaskRepository.findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(20L, RetryStatus.WAITING))
                 .thenReturn(Optional.of(retryTask));
         when(soapEndpointConfigService.getActiveForExecution(definition)).thenReturn(config(definition));

@@ -17,6 +17,7 @@ import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.interfacehub.domain.entity.InternalSystem;
 import com.insurancehub.interfacehub.domain.entity.PartnerCompany;
+import com.insurancehub.protocol.batch.application.BatchRunHistoryService;
 import com.insurancehub.protocol.filetransfer.application.FileTransferHistoryService;
 import com.insurancehub.protocol.mq.application.MqMessageHistoryService;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,9 @@ class InterfaceExecutionControllerTest {
 
     @MockitoBean
     private FileTransferHistoryService fileTransferHistoryService;
+
+    @MockitoBean
+    private BatchRunHistoryService batchRunHistoryService;
 
     @Test
     @WithMockUser(username = "admin")

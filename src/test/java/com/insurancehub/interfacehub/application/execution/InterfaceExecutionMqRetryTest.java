@@ -38,6 +38,7 @@ import com.insurancehub.protocol.mq.domain.entity.MqChannelConfig;
 import com.insurancehub.protocol.mq.domain.entity.MqMessageHistory;
 import com.insurancehub.protocol.mq.infrastructure.LocalMqClient;
 import com.insurancehub.protocol.mq.infrastructure.repository.MqMessageHistoryRepository;
+import com.insurancehub.testsupport.TestTransactionManager;
 import org.apache.activemq.artemis.core.server.embedded.EmbeddedActiveMQ;
 import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -94,9 +95,11 @@ class InterfaceExecutionMqRetryTest {
                 interfaceExecutionRepository,
                 interfaceExecutionStepRepository,
                 interfaceRetryTaskRepository,
-                executorFactory
+                executorFactory,
+                TestTransactionManager.noOp()
         );
         when(interfaceExecutionRepository.existsByExecutionNo(any())).thenReturn(false);
+        when(interfaceExecutionRepository.saveAndFlush(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(interfaceExecutionRepository.save(any(InterfaceExecution.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(mqMessageHistoryRepository.save(any(MqMessageHistory.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
@@ -125,6 +128,7 @@ class InterfaceExecutionMqRetryTest {
         InterfaceRetryTask retryTask = InterfaceRetryTask.waitingFor(original, LocalDateTime.now());
 
         when(interfaceExecutionRepository.findDetailById(10L)).thenReturn(Optional.of(original));
+        when(interfaceDefinitionRepository.findDetailById(1L)).thenReturn(Optional.of(definition));
         when(interfaceRetryTaskRepository.findFirstByExecutionIdAndRetryStatusOrderByCreatedAtDesc(10L, RetryStatus.WAITING))
                 .thenReturn(Optional.of(retryTask));
         when(mqChannelConfigService.getActiveForExecution(definition)).thenReturn(config(definition));

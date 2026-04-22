@@ -9,13 +9,19 @@ import com.insurancehub.interfacehub.infrastructure.repository.InternalSystemRep
 import com.insurancehub.interfacehub.infrastructure.repository.PartnerCompanyRepository;
 import com.insurancehub.protocol.filetransfer.infrastructure.repository.FileTransferConfigRepository;
 import com.insurancehub.protocol.filetransfer.infrastructure.repository.FileTransferHistoryRepository;
+import com.insurancehub.protocol.batch.infrastructure.repository.BatchJobConfigRepository;
+import com.insurancehub.protocol.batch.infrastructure.repository.BatchRunHistoryRepository;
+import com.insurancehub.protocol.batch.infrastructure.repository.BatchStepHistoryRepository;
 import com.insurancehub.protocol.mq.infrastructure.repository.MqChannelConfigRepository;
 import com.insurancehub.protocol.mq.infrastructure.repository.MqMessageHistoryRepository;
 import com.insurancehub.protocol.rest.infrastructure.repository.RestEndpointConfigRepository;
 import com.insurancehub.protocol.soap.infrastructure.repository.SoapEndpointConfigRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.PlatformTransactionManager;
 
 @SpringBootTest(properties = {
         "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,"
@@ -65,6 +71,24 @@ class InsuranceInterfaceHubApplicationTests {
 
     @MockitoBean
     private FileTransferHistoryRepository fileTransferHistoryRepository;
+
+    @MockitoBean
+    private BatchJobConfigRepository batchJobConfigRepository;
+
+    @MockitoBean
+    private BatchRunHistoryRepository batchRunHistoryRepository;
+
+    @MockitoBean
+    private BatchStepHistoryRepository batchStepHistoryRepository;
+
+    @MockitoBean
+    private JobLauncher jobLauncher;
+
+    @MockitoBean
+    private JobRepository jobRepository;
+
+    @MockitoBean
+    private PlatformTransactionManager transactionManager;
 
     @Test
     void contextLoads() {
