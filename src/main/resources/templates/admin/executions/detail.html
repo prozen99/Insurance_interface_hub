@@ -84,17 +84,17 @@
         <section class="panel spacing-bottom" th:if="${execution.requestUrl != null}">
             <div class="panel-header">
                 <div>
-                    <p class="eyebrow" th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP exchange' : (${execution.protocolType.name() == 'MQ'} ? 'MQ exchange' : 'REST exchange')">Protocol exchange</p>
-                    <h3 th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP request and response' : (${execution.protocolType.name() == 'MQ'} ? 'MQ publish and consume' : 'HTTP request and response')">Request and response</h3>
+                    <p class="eyebrow" th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP exchange' : (${execution.protocolType.name() == 'MQ'} ? 'MQ exchange' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'File transfer exchange' : 'REST exchange'))">Protocol exchange</p>
+                    <h3 th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAP request and response' : (${execution.protocolType.name() == 'MQ'} ? 'MQ publish and consume' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'File upload and download' : 'HTTP request and response'))">Request and response</h3>
                 </div>
             </div>
             <dl class="detail-grid">
                 <div class="detail-item">
-                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Flow' : 'Method'">Method</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Flow' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Direction' : 'Method')">Method</dt>
                     <dd th:text="${execution.requestMethod == null ? '-' : execution.requestMethod}">POST</dd>
                 </div>
                 <div class="detail-item">
-                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'HTTP status' : 'Status code'">Status code</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ' or execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'HTTP status' : 'Status code'">Status code</dt>
                     <dd th:text="${execution.responseStatusCode == null ? '-' : execution.responseStatusCode}">200</dd>
                 </div>
                 <div class="detail-item">
@@ -102,26 +102,69 @@
                     <dd th:text="${execution.latencyMs == null ? '-' : execution.latencyMs + ' ms'}">18 ms</dd>
                 </div>
                 <div class="detail-item" th:if="${execution.protocolAction != null}">
-                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAPAction' : (${execution.protocolType.name() == 'MQ'} ? 'Correlation key' : 'Protocol action')">SOAPAction</dt>
+                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'SOAPAction' : (${execution.protocolType.name() == 'MQ'} ? 'Correlation key' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Local file' : 'Protocol action'))">SOAPAction</dt>
                     <dd th:text="${execution.protocolAction}">urn:PolicyInquiry</dd>
                 </div>
                 <div class="detail-item">
-                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'Endpoint URL' : (${execution.protocolType.name() == 'MQ'} ? 'Destination' : 'URL')">URL</dt>
+                    <dt th:text="${execution.protocolType.name() == 'SOAP'} ? 'Endpoint URL' : (${execution.protocolType.name() == 'MQ'} ? 'Destination' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer target' : 'URL'))">URL</dt>
                     <dd th:text="${execution.requestUrl}">http://localhost:8080/simulator/rest/premium/calculate</dd>
                 </div>
                 <div class="detail-item full">
-                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Publish metadata' : 'Request headers'">Request headers</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Publish metadata' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer request metadata' : 'Request headers')">Request headers</dt>
                     <dd>
                         <pre class="payload compact" th:text="${execution.requestHeaders == null ? '{}' : execution.requestHeaders}">{}</pre>
                     </dd>
                 </div>
                 <div class="detail-item full">
-                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Consume metadata' : 'Response headers'">Response headers</dt>
+                    <dt th:text="${execution.protocolType.name() == 'MQ'} ? 'Consume metadata' : (${execution.protocolType.name() == 'SFTP' or execution.protocolType.name() == 'FTP'} ? 'Transfer result metadata' : 'Response headers')">Response headers</dt>
                     <dd>
                         <pre class="payload compact" th:text="${execution.responseHeaders == null ? '{}' : execution.responseHeaders}">{}</pre>
                     </dd>
                 </div>
             </dl>
+        </section>
+
+        <section class="panel spacing-bottom" th:if="${fileTransfers != null}">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">File transfer history</p>
+                    <h3>Transfer result</h3>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Direction</th>
+                    <th>Local File</th>
+                    <th>Remote Path</th>
+                    <th>Status</th>
+                    <th>Size</th>
+                    <th>Latency</th>
+                    <th>Error</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="transfer : ${fileTransfers}">
+                    <td th:text="${transfer.transferDirection}">UPLOAD</td>
+                    <td>
+                        <strong th:text="${transfer.localFileName}">sample-upload.txt</strong>
+                        <div class="help-text" th:text="${transfer.localFilePath}">build/file-transfer-demo/local/input/sample-upload.txt</div>
+                    </td>
+                    <td th:text="${transfer.remoteFilePath}">/inbox/sample-upload.txt</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(transfer.transferStatus.name())}"
+                              th:text="${transfer.transferStatus}">SUCCESS</span>
+                    </td>
+                    <td th:text="${transfer.fileSizeBytes == null ? '-' : transfer.fileSizeBytes + ' bytes'}">128 bytes</td>
+                    <td th:text="${transfer.latencyMillis == null ? '-' : transfer.latencyMillis + ' ms'}">10 ms</td>
+                    <td th:text="${transfer.errorMessage == null ? '-' : transfer.errorMessage}">-</td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(fileTransfers)}">
+                    <td colspan="7" class="empty-state">No file transfer history recorded.</td>
+                </tr>
+                </tbody>
+            </table>
         </section>
 
         <section class="panel spacing-bottom" th:if="${mqMessages != null}">

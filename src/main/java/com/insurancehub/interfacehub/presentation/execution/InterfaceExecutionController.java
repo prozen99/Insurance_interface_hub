@@ -5,6 +5,7 @@ import com.insurancehub.interfacehub.application.execution.InterfaceExecutionSer
 import com.insurancehub.interfacehub.domain.ExecutionStatus;
 import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
+import com.insurancehub.protocol.filetransfer.application.FileTransferHistoryService;
 import com.insurancehub.protocol.mq.application.MqMessageHistoryService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -23,13 +24,16 @@ public class InterfaceExecutionController {
 
     private final InterfaceExecutionService interfaceExecutionService;
     private final MqMessageHistoryService mqMessageHistoryService;
+    private final FileTransferHistoryService fileTransferHistoryService;
 
     public InterfaceExecutionController(
             InterfaceExecutionService interfaceExecutionService,
-            MqMessageHistoryService mqMessageHistoryService
+            MqMessageHistoryService mqMessageHistoryService,
+            FileTransferHistoryService fileTransferHistoryService
     ) {
         this.interfaceExecutionService = interfaceExecutionService;
         this.mqMessageHistoryService = mqMessageHistoryService;
+        this.fileTransferHistoryService = fileTransferHistoryService;
     }
 
     @ModelAttribute("protocolOptions")
@@ -98,6 +102,9 @@ public class InterfaceExecutionController {
         model.addAttribute("retryTasks", interfaceExecutionService.getRetryTasks(id));
         if (execution.getProtocolType() == ProtocolType.MQ) {
             model.addAttribute("mqMessages", mqMessageHistoryService.findByExecutionId(id));
+        }
+        if (execution.getProtocolType() == ProtocolType.SFTP || execution.getProtocolType() == ProtocolType.FTP) {
+            model.addAttribute("fileTransfers", fileTransferHistoryService.findByExecutionId(id));
         }
     }
 }

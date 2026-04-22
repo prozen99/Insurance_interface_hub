@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${interfaceDefinition.protocolType} + ' config | ' + ${interfaceDefinition.interfaceCode}">File transfer config</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow" th:text="${interfaceDefinition.protocolType} + ' file transfer configuration'">File transfer configuration</p>
+            <h2 th:text="${interfaceDefinition.interfaceCode}">IF_SFTP_POLICY_001</h2>
+            <p class="lead">Configure the local demo host, port, credential reference, paths, timeout, and active flag used by manual file transfer execution.</p>
+        </header>
+
+        <div class="toolbar">
+            <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Back to interface</a>
+        </div>
+
+        <section class="panel">
+            <form class="form-grid panel-body"
+                  th:action="@{/admin/interfaces/{id}/file-transfer-config(id=${interfaceDefinition.id})}"
+                  th:object="${form}"
+                  method="post">
+                <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                <input type="hidden" th:field="*{id}">
+                <input type="hidden" th:field="*{protocolType}">
+
+                <label>
+                    Host
+                    <input type="text" th:field="*{host}" placeholder="127.0.0.1">
+                    <span class="field-error" th:if="${#fields.hasErrors('host')}" th:errors="*{host}">Required</span>
+                </label>
+
+                <label>
+                    Port
+                    <input type="number" min="1" max="65535" th:field="*{port}">
+                    <span class="field-error" th:if="${#fields.hasErrors('port')}" th:errors="*{port}">Required</span>
+                </label>
+
+                <label>
+                    Username
+                    <input type="text" th:field="*{username}" placeholder="demo">
+                    <span class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Required</span>
+                </label>
+
+                <label>
+                    Secret reference
+                    <input type="text" th:field="*{secretReference}" placeholder="LOCAL_DEMO_FILE_TRANSFER_PASSWORD">
+                    <span class="field-error" th:if="${#fields.hasErrors('secretReference')}" th:errors="*{secretReference}">Required</span>
+                    <span class="help-text">Use a reference name, not a real password. The local demo reference resolves from app.file-transfer.demo.password.</span>
+                </label>
+
+                <label>
+                    Base remote path
+                    <input type="text" th:field="*{baseRemotePath}" placeholder="/inbox">
+                    <span class="field-error" th:if="${#fields.hasErrors('baseRemotePath')}" th:errors="*{baseRemotePath}">Required</span>
+                </label>
+
+                <label>
+                    Local path
+                    <input type="text" th:field="*{localPath}" placeholder="build/file-transfer-demo/local">
+                    <span class="field-error" th:if="${#fields.hasErrors('localPath')}" th:errors="*{localPath}">Required</span>
+                </label>
+
+                <label>
+                    File name pattern
+                    <input type="text" th:field="*{fileNamePattern}" placeholder="*.txt">
+                    <span class="field-error" th:if="${#fields.hasErrors('fileNamePattern')}" th:errors="*{fileNamePattern}">Too long</span>
+                </label>
+
+                <label>
+                    Timeout millis
+                    <input type="number" min="100" max="60000" step="100" th:field="*{timeoutMillis}">
+                    <span class="field-error" th:if="${#fields.hasErrors('timeoutMillis')}" th:errors="*{timeoutMillis}">Required</span>
+                </label>
+
+                <label class="checkbox-label" th:if="${interfaceDefinition.protocolType.name() == 'FTP'}">
+                    <input type="checkbox" th:field="*{passiveMode}">
+                    <span>Use FTP passive mode</span>
+                </label>
+
+                <label class="checkbox-label">
+                    <input type="checkbox" th:field="*{active}">
+                    <span>Active for manual execution</span>
+                </label>
+
+                <div class="form-actions">
+                    <button class="button primary" type="submit" th:text="'Save ' + ${interfaceDefinition.protocolType} + ' config'">Save config</button>
+                    <a class="button" th:href="@{/admin/interfaces/{id}(id=${interfaceDefinition.id})}">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </main>
+</div>
+</body>
+</html>

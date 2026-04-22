@@ -12,6 +12,10 @@ import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceDefinition;
 import com.insurancehub.interfacehub.presentation.form.InterfaceDefinitionForm;
 import com.insurancehub.interfacehub.presentation.form.ManualExecutionForm;
+import com.insurancehub.protocol.filetransfer.application.FileTransferConfigService;
+import com.insurancehub.protocol.filetransfer.application.FileTransferPayloadCodec;
+import com.insurancehub.protocol.filetransfer.domain.TransferDirection;
+import com.insurancehub.protocol.filetransfer.domain.entity.FileTransferConfig;
 import com.insurancehub.protocol.mq.application.MqChannelConfigService;
 import com.insurancehub.protocol.mq.domain.entity.MqChannelConfig;
 import com.insurancehub.protocol.rest.application.RestEndpointConfigService;
@@ -42,6 +46,8 @@ public class InterfaceDefinitionController {
     private final RestEndpointConfigService restEndpointConfigService;
     private final SoapEndpointConfigService soapEndpointConfigService;
     private final MqChannelConfigService mqChannelConfigService;
+    private final FileTransferConfigService fileTransferConfigService;
+    private final FileTransferPayloadCodec fileTransferPayloadCodec;
 
     public InterfaceDefinitionController(
             InterfaceDefinitionService interfaceDefinitionService,
@@ -50,7 +56,9 @@ public class InterfaceDefinitionController {
             InterfaceExecutionService interfaceExecutionService,
             RestEndpointConfigService restEndpointConfigService,
             SoapEndpointConfigService soapEndpointConfigService,
-            MqChannelConfigService mqChannelConfigService
+            MqChannelConfigService mqChannelConfigService,
+            FileTransferConfigService fileTransferConfigService,
+            FileTransferPayloadCodec fileTransferPayloadCodec
     ) {
         this.interfaceDefinitionService = interfaceDefinitionService;
         this.partnerCompanyService = partnerCompanyService;
@@ -59,6 +67,8 @@ public class InterfaceDefinitionController {
         this.restEndpointConfigService = restEndpointConfigService;
         this.soapEndpointConfigService = soapEndpointConfigService;
         this.mqChannelConfigService = mqChannelConfigService;
+        this.fileTransferConfigService = fileTransferConfigService;
+        this.fileTransferPayloadCodec = fileTransferPayloadCodec;
     }
 
     @ModelAttribute("protocolOptions")
@@ -133,6 +143,11 @@ public class InterfaceDefinitionController {
         if (interfaceDefinition.getProtocolType() == ProtocolType.MQ) {
             manualExecutionForm.setRequestPayload(MqChannelConfigService.SAMPLE_PAYLOAD.trim());
         }
+        if (isFileTransferProtocol(interfaceDefinition.getProtocolType())) {
+            manualExecutionForm.setTransferDirection(TransferDirection.UPLOAD);
+            manualExecutionForm.setLocalFileName(FileTransferConfigService.SAMPLE_UPLOAD_FILE_NAME);
+            manualExecutionForm.setRemoteFilePath("/inbox/" + FileTransferConfigService.SAMPLE_UPLOAD_FILE_NAME);
+        }
         model.addAttribute("manualExecutionForm", manualExecutionForm);
         return "admin/interfaces/detail";
     }
@@ -151,10 +166,21 @@ public class InterfaceDefinitionController {
             return "admin/interfaces/detail";
         }
 
+        InterfaceDefinition interfaceDefinition = interfaceDefinitionService.getDetail(id);
+        String executionPayload = form.getRequestPayload();
+        if (isFileTransferProtocol(interfaceDefinition.getProtocolType())) {
+            validateFileTransferExecutionForm(form, bindingResult);
+            if (bindingResult.hasErrors()) {
+                addDetailModel(id, model);
+                return "admin/interfaces/detail";
+            }
+            executionPayload = fileTransferPayloadCodec.encode(form);
+        }
+
         try {
             Long executionId = interfaceExecutionService.executeManual(
                     id,
-                    form.getRequestPayload(),
+                    executionPayload,
                     authentication == null ? "anonymous" : authentication.getName()
             ).getId();
             redirectAttributes.addFlashAttribute("successMessage", "Manual execution finished.");
@@ -232,6 +258,27 @@ public class InterfaceDefinitionController {
             MqChannelConfig mqConfig = mqChannelConfigService.findByInterfaceDefinitionId(id).orElse(null);
             model.addAttribute("mqConfig", mqConfig);
         }
+        if (isFileTransferProtocol(interfaceDefinition.getProtocolType())) {
+            FileTransferConfig fileTransferConfig = fileTransferConfigService.findByInterfaceDefinitionId(id).orElse(null);
+            model.addAttribute("fileTransferConfig", fileTransferConfig);
+            model.addAttribute("transferDirectionOptions", TransferDirection.values());
+        }
         return interfaceDefinition;
+    }
+
+    private boolean isFileTransferProtocol(ProtocolType protocolType) {
+        return protocolType == ProtocolType.SFTP || protocolType == ProtocolType.FTP;
+    }
+
+    private void validateFileTransferExecutionForm(ManualExecutionForm form, BindingResult bindingResult) {
+        if (form.getTransferDirection() == null) {
+            bindingResult.rejectValue("transferDirection", "required", "Transfer direction is required.");
+        }
+        if (form.getLocalFileName() == null || form.getLocalFileName().trim().isEmpty()) {
+            bindingResult.rejectValue("localFileName", "required", "Local file name is required.");
+        }
+        if (form.getRemoteFilePath() == null || form.getRemoteFilePath().trim().isEmpty()) {
+            bindingResult.rejectValue("remoteFilePath", "required", "Remote file path is required.");
+        }
     }
 }

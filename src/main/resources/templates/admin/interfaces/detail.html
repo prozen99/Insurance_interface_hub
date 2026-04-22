@@ -43,6 +43,10 @@
                 <a class="button"
                    th:if="${interfaceDefinition.protocolType.name() == 'MQ'}"
                    th:href="@{/admin/interfaces/{id}/mq-config(id=${interfaceDefinition.id})}">Configure MQ</a>
+                <a class="button"
+                   th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}"
+                   th:href="@{/admin/interfaces/{id}/file-transfer-config(id=${interfaceDefinition.id})}"
+                   th:text="'Configure ' + ${interfaceDefinition.protocolType}">Configure file transfer</a>
                 <a class="button primary" th:href="@{/admin/interfaces/{id}/edit(id=${interfaceDefinition.id})}">Edit</a>
             </div>
         </div>
@@ -90,7 +94,8 @@
                     <dd th:if="${interfaceDefinition.protocolType.name() == 'REST'}">Phase 5 keeps REST on the real HTTP executor introduced in Phase 3.</dd>
                     <dd th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">Phase 5 keeps SOAP on the real XML executor introduced in Phase 4.</dd>
                     <dd th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">Phase 5 publishes and consumes a real JMS message through the embedded local Artemis broker.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ'}">Phase 5 keeps this protocol mock-driven while REST, SOAP, and MQ are implemented as real integration paths.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">Phase 6 transfers real files through local demo file-transfer servers and records transfer history.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ' and interfaceDefinition.protocolType.name() != 'SFTP' and interfaceDefinition.protocolType.name() != 'FTP'}">Phase 6 keeps this protocol mock-driven while REST, SOAP, MQ, SFTP, and FTP are implemented as real integration paths.</dd>
                 </div>
             </dl>
         </section>
@@ -240,6 +245,67 @@
             </dl>
         </section>
 
+        <section class="panel spacing-bottom" th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow" th:text="${interfaceDefinition.protocolType} + ' settings'">File transfer settings</p>
+                    <h3>Endpoint and path configuration</h3>
+                </div>
+                <a class="button"
+                   th:href="@{/admin/interfaces/{id}/file-transfer-config(id=${interfaceDefinition.id})}"
+                   th:text="'Edit ' + ${interfaceDefinition.protocolType} + ' config'">Edit config</a>
+            </div>
+            <div class="empty-state panel-body" th:if="${fileTransferConfig == null}">
+                File transfer settings are not configured yet.
+            </div>
+            <dl class="detail-grid" th:if="${fileTransferConfig != null}">
+                <div class="detail-item">
+                    <dt>Protocol</dt>
+                    <dd th:text="${fileTransferConfig.protocolType}">SFTP</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Active</dt>
+                    <dd>
+                        <span class="status"
+                              th:classappend="${fileTransferConfig.active} ? ' status-active' : ' status-inactive'"
+                              th:text="${fileTransferConfig.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+                    </dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Host</dt>
+                    <dd th:text="${fileTransferConfig.host}">127.0.0.1</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Port</dt>
+                    <dd th:text="${fileTransferConfig.port}">10022</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Username</dt>
+                    <dd th:text="${fileTransferConfig.username}">demo</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Secret reference</dt>
+                    <dd th:text="${fileTransferConfig.secretReference}">LOCAL_DEMO_FILE_TRANSFER_PASSWORD</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Base remote path</dt>
+                    <dd th:text="${fileTransferConfig.baseRemotePath}">/inbox</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Local path</dt>
+                    <dd th:text="${fileTransferConfig.localPath}">build/file-transfer-demo/local</dd>
+                </div>
+                <div class="detail-item">
+                    <dt>Timeout</dt>
+                    <dd th:text="${fileTransferConfig.timeoutMillis + ' ms'}">5000 ms</dd>
+                </div>
+                <div class="detail-item" th:if="${interfaceDefinition.protocolType.name() == 'FTP'}">
+                    <dt>Passive mode</dt>
+                    <dd th:text="${fileTransferConfig.passiveMode ? 'YES' : 'NO'}">YES</dd>
+                </div>
+            </dl>
+        </section>
+
         <section class="panel spacing-bottom">
             <div class="panel-header">
                 <div>
@@ -255,7 +321,27 @@
                   th:object="${manualExecutionForm}"
                   method="post">
                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-                <label>
+                <div class="detail-grid" th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">
+                    <label>
+                        Transfer direction
+                        <select th:field="*{transferDirection}">
+                            <option th:each="direction : ${transferDirectionOptions}" th:value="${direction}" th:text="${direction}">UPLOAD</option>
+                        </select>
+                        <span class="field-error" th:if="${#fields.hasErrors('transferDirection')}" th:errors="*{transferDirection}">Required</span>
+                    </label>
+                    <label>
+                        Local file name
+                        <input type="text" th:field="*{localFileName}" placeholder="sample-upload.txt">
+                        <span class="field-error" th:if="${#fields.hasErrors('localFileName')}" th:errors="*{localFileName}">Required</span>
+                        <span class="help-text">Upload reads from local/input. Download writes to local/download.</span>
+                    </label>
+                    <label>
+                        Remote file path
+                        <input type="text" th:field="*{remoteFilePath}" placeholder="/inbox/sample-upload.txt">
+                        <span class="field-error" th:if="${#fields.hasErrors('remoteFilePath')}" th:errors="*{remoteFilePath}">Required</span>
+                    </label>
+                </div>
+                <label th:if="${interfaceDefinition.protocolType.name() != 'SFTP' and interfaceDefinition.protocolType.name() != 'FTP'}">
                     Request payload
                     <textarea th:field="*{requestPayload}"
                               th:placeholder="${interfaceDefinition.protocolType.name() == 'REST'} ? 'JSON request body sent to the configured REST endpoint. Include FAIL to trigger simulator failure.' : (${interfaceDefinition.protocolType.name() == 'SOAP'} ? 'SOAP envelope XML sent to the configured SOAP endpoint. Include FAIL to trigger a SOAP fault.' : (${interfaceDefinition.protocolType.name() == 'MQ'} ? 'Text message payload sent to the configured MQ destination. Include FAIL to trigger consumer failure.' : 'Optional mock request payload. Include FAIL to simulate failure.'))"></textarea>
@@ -266,7 +352,8 @@
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'REST'}">REST calls the configured endpoint. The local simulator returns a controlled failure when the payload contains FAIL.</p>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">SOAP calls the configured endpoint. The local simulator returns a SOAP fault when the XML contains FAIL.</p>
                     <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">MQ publishes to the embedded local Artemis broker, then consumes the same message by correlation key. Payloads containing FAIL simulate consumer failure.</p>
-                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ'}">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
+                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">File transfer uses local demo servers. Upload sample: local file sample-upload.txt to /inbox/sample-upload.txt. Download sample: remote /outbox/sample-download.txt to local file sample-download.txt.</p>
+                    <p class="help-text" th:if="${interfaceDefinition.protocolType.name() != 'REST' and interfaceDefinition.protocolType.name() != 'SOAP' and interfaceDefinition.protocolType.name() != 'MQ' and interfaceDefinition.protocolType.name() != 'SFTP' and interfaceDefinition.protocolType.name() != 'FTP'}">Mock rule: payload or interface code containing FAIL returns a failed execution.</p>
                 </div>
             </form>
         </section>
