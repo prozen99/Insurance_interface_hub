@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MQ Monitoring | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">MQ monitoring</p>
+            <h2>Message publish and consume</h2>
+            <p class="lead">Check local Artemis publish results, consume processing results, correlation keys, destinations, latency, and errors.</p>
+        </header>
+
+        <section class="summary-grid operations-summary">
+            <article class="summary-card">
+                <p>Publish success</p>
+                <strong th:text="${mqMonitoring.summary.publishSuccess}">0</strong>
+                <span>Messages published today</span>
+            </article>
+            <article class="summary-card">
+                <p>Publish fail</p>
+                <strong th:text="${mqMonitoring.summary.publishFailed}">0</strong>
+                <span>Producer-side failures today</span>
+            </article>
+            <article class="summary-card">
+                <p>Consume success</p>
+                <strong th:text="${mqMonitoring.summary.consumeSuccess}">0</strong>
+                <span>Messages processed today</span>
+            </article>
+            <article class="summary-card">
+                <p>Consume fail</p>
+                <strong th:text="${mqMonitoring.summary.consumeFailed}">0</strong>
+                <span>Consumer-side failures today</span>
+            </article>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Recent</p>
+                    <h3>MQ message history</h3>
+                </div>
+                <a class="button" th:href="@{/admin/executions(protocolType='MQ')}">MQ executions</a>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Interface</th>
+                    <th>Destination</th>
+                    <th>Correlation</th>
+                    <th>Publish</th>
+                    <th>Consume</th>
+                    <th>Latency</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="message : ${mqMonitoring.recentMessages}">
+                    <td th:text="${message.interfaceDefinition.interfaceCode}">IF_MQ</td>
+                    <td th:text="${message.destinationName}">queue.demo</td>
+                    <td th:text="${message.correlationKey}">CORR</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(message.publishStatus.name())}"
+                              th:text="${message.publishStatus}">SUCCESS</span>
+                    </td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(message.consumeStatus.name())}"
+                              th:text="${message.consumeStatus}">SUCCESS</span>
+                    </td>
+                    <td th:text="${message.latencyMs == null ? '-' : message.latencyMs + ' ms'}">0 ms</td>
+                    <td><a th:href="@{/admin/executions/{id}(id=${message.execution.id})}">Execution</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(mqMonitoring.recentMessages)}">
+                    <td colspan="7" class="empty-state">No MQ messages recorded yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

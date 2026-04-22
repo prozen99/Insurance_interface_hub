@@ -14,29 +14,227 @@
         <div th:replace="~{admin/fragments/messages :: messages}"></div>
 
         <header class="page-header">
-            <p class="eyebrow">Admin operations console</p>
-            <h2>Interface execution operations</h2>
-            <p class="lead">Manage master data, run mock protocol executions, review outcomes, and retry failures before real adapters are introduced.</p>
+            <p class="eyebrow">Operations center</p>
+            <h2>&#48372;&#54744;&#49324; &#44552;&#50997; IT &#51064;&#53552;&#54168;&#51060;&#49828; &#53685;&#54633;&#44288;&#47532;&#49884;&#49828;&#53596;</h2>
+            <p class="lead">Track real REST, SOAP, MQ, SFTP, FTP, and Batch operations from one console, then jump straight to failures, retries, and execution detail.</p>
         </header>
 
-        <section class="summary-grid" aria-label="Summary metrics">
-            <article class="summary-card" th:each="metric : ${summaryMetrics}">
-                <p th:text="${metric.label}">Total interfaces</p>
+        <section class="summary-grid operations-summary" aria-label="Operations summary">
+            <a class="summary-card summary-link"
+               th:each="metric : ${overview.primaryMetrics}"
+               th:classappend="${' summary-' + metric.tone}"
+               th:href="${metric.href}">
+                <p th:text="${metric.label}">Today success</p>
                 <strong th:text="${metric.value}">0</strong>
+                <span th:text="${metric.caption}">Completed executions</span>
+            </a>
+        </section>
+
+        <section class="quick-link-grid spacing-bottom">
+            <a class="quick-link" th:href="@{/admin/monitoring/failures}">
+                <strong>Failure review</strong>
+                <span>Top failed interfaces and latest failed executions</span>
+            </a>
+            <a class="quick-link" th:href="@{/admin/monitoring/retries}">
+                <strong>Retry queue</strong>
+                <span>Waiting retry tasks and recent retry outcomes</span>
+            </a>
+            <a class="quick-link" th:href="@{/admin/monitoring/protocols}">
+                <strong>Protocol health</strong>
+                <span>REST, SOAP, MQ, SFTP, FTP, and Batch summaries</span>
+            </a>
+            <a class="quick-link" th:href="@{/admin/executions}">
+                <strong>Execution history</strong>
+                <span>Filter by protocol, status, trigger, and date</span>
+            </a>
+        </section>
+
+        <section class="split-grid spacing-bottom">
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">7-day trend</p>
+                        <h3>Execution outcomes</h3>
+                    </div>
+                    <a class="button" th:href="@{/admin/monitoring/protocols}">Open trend</a>
+                </div>
+                <table class="table compact-table">
+                    <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Success</th>
+                        <th>Failed</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="point : ${overview.executionTrend}">
+                        <td th:text="${#temporals.format(point.date, 'MM-dd')}">04-22</td>
+                        <td th:text="${point.total}">0</td>
+                        <td><span class="status status-success" th:text="${point.success}">0</span></td>
+                        <td><span class="status status-failed" th:text="${point.failure}">0</span></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Attention queue</p>
+                        <h3>Top failed interfaces</h3>
+                    </div>
+                    <a class="button warning" th:href="@{/admin/monitoring/failures}">Review</a>
+                </div>
+                <table class="table compact-table">
+                    <thead>
+                    <tr>
+                        <th>Interface</th>
+                        <th>Protocol</th>
+                        <th>Failures</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="failed : ${overview.topFailedInterfaces}">
+                        <td>
+                            <a th:href="@{/admin/interfaces/{id}(id=${failed.interfaceDefinitionId})}" th:text="${failed.interfaceCode}">IF_REST</a>
+                            <div class="help-text" th:text="${failed.interfaceName}">Policy inquiry</div>
+                        </td>
+                        <td><span class="protocol-badge" th:text="${failed.protocolType}">REST</span></td>
+                        <td><span class="status status-failed" th:text="${failed.failureCount}">0</span></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(overview.topFailedInterfaces)}">
+                        <td colspan="3" class="empty-state">No failures in the last 7 days.</td>
+                    </tr>
+                    </tbody>
+                </table>
             </article>
         </section>
 
-        <section class="module-section">
+        <section class="module-section spacing-bottom">
             <div class="section-heading">
-                <p class="eyebrow">Protocol classification</p>
-                <h3>Available interface types</h3>
+                <p class="eyebrow">Protocol health</p>
+                <h3>Today by protocol</h3>
             </div>
-            <div class="module-grid">
-                <article class="module-card" th:each="module : ${protocolModules}">
-                    <span th:text="${module.name}">REST</span>
-                    <p th:text="${module.description}">HTTP API endpoints and partner callbacks</p>
+            <div class="module-grid protocol-grid">
+                <article class="module-card protocol-card" th:each="protocol : ${overview.protocolSummaries}">
+                    <div class="protocol-card-title">
+                        <span th:text="${protocol.protocolType}">REST</span>
+                        <a th:href="@{/admin/executions(protocolType=${protocol.protocolType})}">History</a>
+                    </div>
+                    <dl class="mini-stat-grid">
+                        <div>
+                            <dt>Active</dt>
+                            <dd th:text="${protocol.activeInterfaces}">0</dd>
+                        </div>
+                        <div>
+                            <dt>Today success</dt>
+                            <dd th:text="${protocol.todaySuccess}">0</dd>
+                        </div>
+                        <div>
+                            <dt>Today fail</dt>
+                            <dd th:text="${protocol.todayFailure}">0</dd>
+                        </div>
+                        <div>
+                            <dt>7-day runs</dt>
+                            <dd th:text="${protocol.recentTotal}">0</dd>
+                        </div>
+                    </dl>
                 </article>
             </div>
+        </section>
+
+        <section class="split-grid spacing-bottom">
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Recent work</p>
+                        <h3>Latest executions</h3>
+                    </div>
+                    <a class="button" th:href="@{/admin/executions}">All executions</a>
+                </div>
+                <table class="table compact-table">
+                    <thead>
+                    <tr>
+                        <th>Execution</th>
+                        <th>Protocol</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="execution : ${overview.recentExecutions}">
+                        <td>
+                            <a th:href="@{/admin/executions/{id}(id=${execution.id})}" th:text="${execution.executionNo}">EXE</a>
+                            <div class="help-text" th:text="${execution.interfaceDefinition.interfaceCode}">IF_CODE</div>
+                        </td>
+                        <td><span class="protocol-badge" th:text="${execution.protocolType}">REST</span></td>
+                        <td>
+                            <span class="status"
+                                  th:classappend="${' status-' + #strings.toLowerCase(execution.executionStatus.name())}"
+                                  th:text="${execution.executionStatus}">SUCCESS</span>
+                        </td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(overview.recentExecutions)}">
+                        <td colspan="3" class="empty-state">Run an interface to populate recent operations.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Pending recovery</p>
+                        <h3>Retry tasks</h3>
+                    </div>
+                    <a class="button" th:href="@{/admin/monitoring/retries}">Open retries</a>
+                </div>
+                <table class="table compact-table">
+                    <thead>
+                    <tr>
+                        <th>Interface</th>
+                        <th>Retry</th>
+                        <th>Next</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="retry : ${overview.pendingRetries}">
+                        <td>
+                            <a th:href="@{/admin/executions/{id}(id=${retry.execution.id})}" th:text="${retry.interfaceDefinition.interfaceCode}">IF_CODE</a>
+                            <div class="help-text" th:text="${retry.lastErrorMessage == null ? '-' : retry.lastErrorMessage}">Error</div>
+                        </td>
+                        <td><span class="status status-waiting" th:text="${retry.retryCount}">0</span></td>
+                        <td th:text="${retry.nextRetryAt == null ? '-' : #temporals.format(retry.nextRetryAt, 'MM-dd HH:mm')}">-</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(overview.pendingRetries)}">
+                        <td colspan="3" class="empty-state">No retry tasks waiting.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+        </section>
+
+        <section class="summary-grid operations-summary">
+            <a class="summary-card summary-link" th:href="@{/admin/monitoring/files}">
+                <p>File transfer today</p>
+                <strong th:text="${overview.fileTransferSummary.todayTotal}">0</strong>
+                <span th:text="|Success ${overview.fileTransferSummary.todaySuccess} / Fail ${overview.fileTransferSummary.todayFailed}|">Success 0 / Fail 0</span>
+            </a>
+            <a class="summary-card summary-link" th:href="@{/admin/monitoring/mq}">
+                <p>MQ consumed today</p>
+                <strong th:text="${overview.mqSummary.consumeSuccess}">0</strong>
+                <span th:text="|Publish fail ${overview.mqSummary.publishFailed} / Consume fail ${overview.mqSummary.consumeFailed}|">Publish fail 0 / Consume fail 0</span>
+            </a>
+            <a class="summary-card summary-link" th:href="@{/admin/monitoring/batch}">
+                <p>Batch runs today</p>
+                <strong th:text="${overview.batchSummary.todayTotal}">0</strong>
+                <span th:text="|Done ${overview.batchSummary.todayCompleted} / Failed ${overview.batchSummary.todayFailed}|">Done 0 / Failed 0</span>
+            </a>
+            <a class="summary-card summary-link" th:href="@{/actuator/health}">
+                <p>Actuator health</p>
+                <strong>OPEN</strong>
+                <span>Runtime health endpoint</span>
+            </a>
         </section>
     </main>
 </div>

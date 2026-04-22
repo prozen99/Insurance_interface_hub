@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Retries | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Retry monitoring</p>
+            <h2>Retry queue</h2>
+            <p class="lead">Review waiting retry tasks, retry counts, next retry time, and recently completed retry work.</p>
+        </header>
+
+        <section class="summary-grid operations-summary">
+            <article class="summary-card">
+                <p>Pending retries</p>
+                <strong th:text="${retryMonitoring.pendingRetryCount}">0</strong>
+                <span>Waiting for operator or scheduled retry</span>
+            </article>
+            <article class="summary-card">
+                <p>New today</p>
+                <strong th:text="${retryMonitoring.newWaitingToday}">0</strong>
+                <span>Created by failed executions</span>
+            </article>
+            <article class="summary-card">
+                <p>Done in 7 days</p>
+                <strong th:text="${retryMonitoring.doneLastSevenDays}">0</strong>
+                <span>Retry tasks completed recently</span>
+            </article>
+            <a class="summary-card summary-link" th:href="@{/admin/executions/failed}">
+                <p>Failed executions</p>
+                <strong>OPEN</strong>
+                <span>Retry from execution detail</span>
+            </a>
+        </section>
+
+        <section class="split-grid">
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Waiting</p>
+                        <h3>Pending retry tasks</h3>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Interface</th>
+                        <th>Status</th>
+                        <th>Count</th>
+                        <th>Next retry</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="retry : ${retryMonitoring.waitingRetries}">
+                        <td>
+                            <strong th:text="${retry.interfaceDefinition.interfaceCode}">IF_CODE</strong>
+                            <div class="help-text" th:text="${retry.lastErrorMessage == null ? '-' : retry.lastErrorMessage}">Error</div>
+                        </td>
+                        <td><span class="status status-waiting" th:text="${retry.retryStatus}">WAITING</span></td>
+                        <td th:text="${retry.retryCount}">0</td>
+                        <td th:text="${retry.nextRetryAt == null ? '-' : #temporals.format(retry.nextRetryAt, 'yyyy-MM-dd HH:mm')}">-</td>
+                        <td><a th:href="@{/admin/executions/{id}(id=${retry.execution.id})}">Execution</a></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(retryMonitoring.waitingRetries)}">
+                        <td colspan="5" class="empty-state">No retry tasks are waiting.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Latest</p>
+                        <h3>Retry activity</h3>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Interface</th>
+                        <th>Status</th>
+                        <th>Last retried</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="retry : ${retryMonitoring.recentRetryTasks}">
+                        <td>
+                            <a th:href="@{/admin/executions/{id}(id=${retry.execution.id})}" th:text="${retry.interfaceDefinition.interfaceCode}">IF_CODE</a>
+                            <div class="help-text" th:text="${retry.execution.executionNo}">EXE</div>
+                        </td>
+                        <td>
+                            <span class="status"
+                                  th:classappend="${' status-' + #strings.toLowerCase(retry.retryStatus.name())}"
+                                  th:text="${retry.retryStatus}">DONE</span>
+                        </td>
+                        <td th:text="${retry.lastRetriedAt == null ? '-' : #temporals.format(retry.lastRetriedAt, 'yyyy-MM-dd HH:mm')}">-</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(retryMonitoring.recentRetryTasks)}">
+                        <td colspan="3" class="empty-state">No retry activity recorded.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+        </section>
+    </main>
+</div>
+</body>
+</html>

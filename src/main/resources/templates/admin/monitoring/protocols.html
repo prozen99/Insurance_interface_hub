@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Protocol Health | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Protocol monitoring</p>
+            <h2>Protocol health</h2>
+            <p class="lead">Compare protocol activity, active interface coverage, today success, today failure, and 7-day execution volume.</p>
+        </header>
+
+        <section class="module-grid protocol-grid spacing-bottom">
+            <article class="module-card protocol-card" th:each="protocol : ${protocolSummaries}">
+                <div class="protocol-card-title">
+                    <span th:text="${protocol.protocolType}">REST</span>
+                    <a th:href="@{/admin/executions(protocolType=${protocol.protocolType})}">Executions</a>
+                </div>
+                <dl class="mini-stat-grid">
+                    <div>
+                        <dt>Total</dt>
+                        <dd th:text="${protocol.totalInterfaces}">0</dd>
+                    </div>
+                    <div>
+                        <dt>Active</dt>
+                        <dd th:text="${protocol.activeInterfaces}">0</dd>
+                    </div>
+                    <div>
+                        <dt>Success</dt>
+                        <dd th:text="${protocol.todaySuccess}">0</dd>
+                    </div>
+                    <div>
+                        <dt>Failed</dt>
+                        <dd th:text="${protocol.todayFailure}">0</dd>
+                    </div>
+                </dl>
+                <p class="help-text" th:text="|${protocol.recentTotal} executions in the last 7 days|">0 executions in the last 7 days</p>
+            </article>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Trend</p>
+                    <h3>Last 7 days</h3>
+                </div>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Total</th>
+                    <th>Success</th>
+                    <th>Failed</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="point : ${trend}">
+                    <td th:text="${#temporals.format(point.date, 'yyyy-MM-dd')}">2026-04-22</td>
+                    <td th:text="${point.total}">0</td>
+                    <td><span class="status status-success" th:text="${point.success}">0</span></td>
+                    <td><span class="status status-failed" th:text="${point.failure}">0</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

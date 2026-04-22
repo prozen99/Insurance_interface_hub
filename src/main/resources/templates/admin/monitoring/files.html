@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>File Transfer Monitoring | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">File transfer monitoring</p>
+            <h2>SFTP and FTP transfers</h2>
+            <p class="lead">Review upload and download outcomes, file sizes, paths, latency, checksums, and linked execution records.</p>
+        </header>
+
+        <section class="summary-grid operations-summary">
+            <article class="summary-card">
+                <p>Today transfers</p>
+                <strong th:text="${fileTransferMonitoring.summary.todayTotal}">0</strong>
+                <span>Total SFTP and FTP movements</span>
+            </article>
+            <article class="summary-card">
+                <p>Today success</p>
+                <strong th:text="${fileTransferMonitoring.summary.todaySuccess}">0</strong>
+                <span>Completed uploads or downloads</span>
+            </article>
+            <article class="summary-card">
+                <p>Today fail</p>
+                <strong th:text="${fileTransferMonitoring.summary.todayFailed}">0</strong>
+                <span>Transfers needing review</span>
+            </article>
+            <a class="summary-card summary-link" th:href="@{/admin/executions(protocolType='SFTP')}">
+                <p>SFTP history</p>
+                <strong>OPEN</strong>
+                <span>Filtered execution history</span>
+            </a>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Recent</p>
+                    <h3>File transfer history</h3>
+                </div>
+                <a class="button" th:href="@{/admin/executions(protocolType='FTP')}">FTP executions</a>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Protocol</th>
+                    <th>Interface</th>
+                    <th>Direction</th>
+                    <th>Status</th>
+                    <th>File</th>
+                    <th>Latency</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="transfer : ${fileTransferMonitoring.recentTransfers}">
+                    <td><span class="protocol-badge" th:text="${transfer.protocolType}">SFTP</span></td>
+                    <td th:text="${transfer.interfaceDefinition.interfaceCode}">IF_FILE</td>
+                    <td><span class="status status-pending" th:text="${transfer.transferDirection}">UPLOAD</span></td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(transfer.transferStatus.name())}"
+                              th:text="${transfer.transferStatus}">SUCCESS</span>
+                    </td>
+                    <td>
+                        <strong th:text="${transfer.localFileName}">sample.txt</strong>
+                        <div class="help-text" th:text="${transfer.remoteFilePath}">/inbox/sample.txt</div>
+                    </td>
+                    <td th:text="${transfer.latencyMillis == null ? '-' : transfer.latencyMillis + ' ms'}">0 ms</td>
+                    <td><a th:href="@{/admin/executions/{id}(id=${transfer.execution.id})}">Execution</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(fileTransferMonitoring.recentTransfers)}">
+                    <td colspan="7" class="empty-state">No file transfers recorded yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

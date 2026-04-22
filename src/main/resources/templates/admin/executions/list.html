@@ -44,6 +44,24 @@
                             th:selected="${status == selectedExecutionStatus}">SUCCESS</option>
                 </select>
             </label>
+            <label>
+                Trigger
+                <select name="triggerType">
+                    <option value="">All triggers</option>
+                    <option th:each="trigger : ${triggerTypeOptions}"
+                            th:value="${trigger}"
+                            th:text="${trigger}"
+                            th:selected="${trigger == selectedTriggerType}">MANUAL</option>
+                </select>
+            </label>
+            <label>
+                From
+                <input type="date" name="startedFrom" th:value="${startedFrom}">
+            </label>
+            <label>
+                To
+                <input type="date" name="startedTo" th:value="${startedTo}">
+            </label>
             <button class="button" type="submit">Filter</button>
         </form>
 

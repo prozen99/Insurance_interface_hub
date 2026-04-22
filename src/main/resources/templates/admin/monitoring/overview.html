@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Monitoring | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Monitoring</p>
+            <h2>Operational visibility</h2>
+            <p class="lead">Review interface health, failure pressure, retry load, and protocol activity across the full local demo stack.</p>
+        </header>
+
+        <section class="summary-grid operations-summary">
+            <a class="summary-card summary-link"
+               th:each="metric : ${overview.primaryMetrics}"
+               th:classappend="${' summary-' + metric.tone}"
+               th:href="${metric.href}">
+                <p th:text="${metric.label}">Metric</p>
+                <strong th:text="${metric.value}">0</strong>
+                <span th:text="${metric.caption}">Caption</span>
+            </a>
+        </section>
+
+        <section class="quick-link-grid spacing-bottom">
+            <a class="quick-link" th:href="@{/admin/monitoring/protocols}">
+                <strong>Protocol summaries</strong>
+                <span>Compare today success and failure by protocol</span>
+            </a>
+            <a class="quick-link" th:href="@{/admin/monitoring/failures}">
+                <strong>Failure focus</strong>
+                <span>Open top failed interfaces and recent failed executions</span>
+            </a>
+            <a class="quick-link" th:href="@{/admin/monitoring/files}">
+                <strong>File transfers</strong>
+                <span>Inspect SFTP and FTP transfer outcomes</span>
+            </a>
+            <a class="quick-link" th:href="@{/admin/monitoring/batch}">
+                <strong>Batch runs</strong>
+                <span>Review Spring Batch status and counts</span>
+            </a>
+        </section>
+
+        <section class="split-grid">
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Trend</p>
+                        <h3>Last 7 days</h3>
+                    </div>
+                </div>
+                <table class="table compact-table">
+                    <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Total</th>
+                        <th>Success</th>
+                        <th>Failed</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="point : ${overview.executionTrend}">
+                        <td th:text="${#temporals.format(point.date, 'yyyy-MM-dd')}">2026-04-22</td>
+                        <td th:text="${point.total}">0</td>
+                        <td><span class="status status-success" th:text="${point.success}">0</span></td>
+                        <td><span class="status status-failed" th:text="${point.failure}">0</span></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Problem spots</p>
+                        <h3>Top failures</h3>
+                    </div>
+                    <a class="button warning" th:href="@{/admin/monitoring/failures}">Open</a>
+                </div>
+                <table class="table compact-table">
+                    <thead>
+                    <tr>
+                        <th>Interface</th>
+                        <th>Protocol</th>
+                        <th>Failures</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="failed : ${overview.topFailedInterfaces}">
+                        <td>
+                            <a th:href="@{/admin/interfaces/{id}(id=${failed.interfaceDefinitionId})}" th:text="${failed.interfaceCode}">IF_CODE</a>
+                            <div class="help-text" th:text="${failed.interfaceName}">Interface name</div>
+                        </td>
+                        <td><span class="protocol-badge" th:text="${failed.protocolType}">REST</span></td>
+                        <td><span class="status status-failed" th:text="${failed.failureCount}">0</span></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(overview.topFailedInterfaces)}">
+                        <td colspan="3" class="empty-state">No failed executions in the last 7 days.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+        </section>
+    </main>
+</div>
+</body>
+</html>

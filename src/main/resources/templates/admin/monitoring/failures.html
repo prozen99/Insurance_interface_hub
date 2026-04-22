@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Failures | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Failure monitoring</p>
+            <h2>Failed interfaces</h2>
+            <p class="lead">Prioritize interfaces with repeated failures, then open execution detail pages for payloads, protocol result data, and retry actions.</p>
+        </header>
+
+        <section class="split-grid spacing-bottom">
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Last 7 days</p>
+                        <h3>Top failed interfaces</h3>
+                    </div>
+                </div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Interface</th>
+                        <th>Protocol</th>
+                        <th>Failures</th>
+                        <th>Action</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="failed : ${failureMonitoring.topFailedInterfaces}">
+                        <td>
+                            <strong th:text="${failed.interfaceCode}">IF_CODE</strong>
+                            <div class="help-text" th:text="${failed.interfaceName}">Interface name</div>
+                        </td>
+                        <td><span class="protocol-badge" th:text="${failed.protocolType}">REST</span></td>
+                        <td><span class="status status-failed" th:text="${failed.failureCount}">0</span></td>
+                        <td><a th:href="@{/admin/interfaces/{id}(id=${failed.interfaceDefinitionId})}">Open interface</a></td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(failureMonitoring.topFailedInterfaces)}">
+                        <td colspan="4" class="empty-state">No failed interfaces in the last 7 days.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+
+            <article class="panel">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow">Recent</p>
+                        <h3>Failed executions</h3>
+                    </div>
+                    <a class="button warning" th:href="@{/admin/executions/failed}">Failed only</a>
+                </div>
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Execution</th>
+                        <th>Interface</th>
+                        <th>Error</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="execution : ${failureMonitoring.recentFailedExecutions}">
+                        <td>
+                            <a th:href="@{/admin/executions/{id}(id=${execution.id})}" th:text="${execution.executionNo}">EXE</a>
+                            <div class="help-text" th:text="${execution.startedAt == null ? '-' : #temporals.format(execution.startedAt, 'MM-dd HH:mm')}">-</div>
+                        </td>
+                        <td>
+                            <span class="protocol-badge" th:text="${execution.protocolType}">REST</span>
+                            <div class="help-text" th:text="${execution.interfaceDefinition.interfaceCode}">IF_CODE</div>
+                        </td>
+                        <td th:text="${execution.errorMessage == null ? '-' : execution.errorMessage}">Error</td>
+                    </tr>
+                    <tr th:if="${#lists.isEmpty(failureMonitoring.recentFailedExecutions)}">
+                        <td colspan="3" class="empty-state">No failed executions recorded.</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </article>
+        </section>
+    </main>
+</div>
+</body>
+</html>

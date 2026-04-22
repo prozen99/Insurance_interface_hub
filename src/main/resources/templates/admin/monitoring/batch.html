@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Batch Monitoring | Insurance Interface Hub</title>
+    <link rel="stylesheet" th:href="@{/css/admin.css}">
+</head>
+<body>
+<div class="app-shell">
+    <aside th:replace="~{admin/fragments/sidebar :: sidebar(${activeNav})}"></aside>
+
+    <main class="content">
+        <div th:replace="~{admin/fragments/messages :: messages}"></div>
+
+        <header class="page-header">
+            <p class="eyebrow">Batch monitoring</p>
+            <h2>Spring Batch operations</h2>
+            <p class="lead">Review manual and scheduled batch runs, read and write counts, skip counts, status, and linked execution detail.</p>
+        </header>
+
+        <section class="summary-grid operations-summary">
+            <article class="summary-card">
+                <p>Runs today</p>
+                <strong th:text="${batchMonitoring.summary.todayTotal}">0</strong>
+                <span>Manual and scheduled launches</span>
+            </article>
+            <article class="summary-card">
+                <p>Completed today</p>
+                <strong th:text="${batchMonitoring.summary.todayCompleted}">0</strong>
+                <span>Finished with COMPLETED</span>
+            </article>
+            <article class="summary-card">
+                <p>Failed today</p>
+                <strong th:text="${batchMonitoring.summary.todayFailed}">0</strong>
+                <span>Finished with FAILED</span>
+            </article>
+            <article class="summary-card">
+                <p>Running today</p>
+                <strong th:text="${batchMonitoring.summary.todayRunning}">0</strong>
+                <span>STARTING or STARTED</span>
+            </article>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <p class="eyebrow">Recent</p>
+                    <h3>Batch run history</h3>
+                </div>
+                <a class="button" th:href="@{/admin/batch-runs}">All batch runs</a>
+            </div>
+            <table class="table">
+                <thead>
+                <tr>
+                    <th>Job</th>
+                    <th>Interface</th>
+                    <th>Status</th>
+                    <th>Read</th>
+                    <th>Write</th>
+                    <th>Skip</th>
+                    <th>Started</th>
+                    <th>Action</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="run : ${batchMonitoring.recentRuns}">
+                    <td>
+                        <a th:href="@{/admin/batch-runs/{id}(id=${run.id})}" th:text="${run.jobName}">job</a>
+                        <div class="help-text" th:text="${run.jobType}">TYPE</div>
+                    </td>
+                    <td th:text="${run.interfaceDefinition.interfaceCode}">IF_BATCH</td>
+                    <td>
+                        <span class="status"
+                              th:classappend="${' status-' + #strings.toLowerCase(run.batchStatus)}"
+                              th:text="${run.batchStatus}">COMPLETED</span>
+                    </td>
+                    <td th:text="${run.readCount == null ? '-' : run.readCount}">0</td>
+                    <td th:text="${run.writeCount == null ? '-' : run.writeCount}">0</td>
+                    <td th:text="${run.skipCount == null ? '-' : run.skipCount}">0</td>
+                    <td th:text="${run.startedAt == null ? '-' : #temporals.format(run.startedAt, 'yyyy-MM-dd HH:mm')}">-</td>
+                    <td><a th:href="@{/admin/executions/{id}(id=${run.execution.id})}">Execution</a></td>
+                </tr>
+                <tr th:if="${#lists.isEmpty(batchMonitoring.recentRuns)}">
+                    <td colspan="8" class="empty-state">No batch runs recorded yet.</td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </main>
+</div>
+</body>
+</html>

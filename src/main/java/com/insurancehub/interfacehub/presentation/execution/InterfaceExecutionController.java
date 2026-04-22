@@ -1,14 +1,18 @@
 package com.insurancehub.interfacehub.presentation.execution;
 
+import java.time.LocalDate;
+
 import com.insurancehub.interfacehub.application.execution.ExecutionNotAllowedException;
 import com.insurancehub.interfacehub.application.execution.InterfaceExecutionService;
 import com.insurancehub.interfacehub.domain.ExecutionStatus;
+import com.insurancehub.interfacehub.domain.ExecutionTriggerType;
 import com.insurancehub.interfacehub.domain.ProtocolType;
 import com.insurancehub.interfacehub.domain.entity.InterfaceExecution;
 import com.insurancehub.protocol.batch.application.BatchRunHistoryService;
 import com.insurancehub.protocol.filetransfer.application.FileTransferHistoryService;
 import com.insurancehub.protocol.mq.application.MqMessageHistoryService;
 import org.springframework.security.core.Authentication;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -50,18 +54,36 @@ public class InterfaceExecutionController {
         return ExecutionStatus.values();
     }
 
+    @ModelAttribute("triggerTypeOptions")
+    public ExecutionTriggerType[] triggerTypeOptions() {
+        return ExecutionTriggerType.values();
+    }
+
     @GetMapping
     public String list(
             @RequestParam(required = false) String keyword,
             @RequestParam(required = false) ProtocolType protocolType,
             @RequestParam(required = false) ExecutionStatus executionStatus,
+            @RequestParam(required = false) ExecutionTriggerType triggerType,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startedFrom,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startedTo,
             Model model
     ) {
         model.addAttribute("activeNav", "executions");
-        model.addAttribute("executions", interfaceExecutionService.search(keyword, protocolType, executionStatus));
+        model.addAttribute("executions", interfaceExecutionService.search(
+                keyword,
+                protocolType,
+                executionStatus,
+                triggerType,
+                startedFrom,
+                startedTo
+        ));
         model.addAttribute("keyword", keyword);
         model.addAttribute("selectedProtocolType", protocolType);
         model.addAttribute("selectedExecutionStatus", executionStatus);
+        model.addAttribute("selectedTriggerType", triggerType);
+        model.addAttribute("startedFrom", startedFrom);
+        model.addAttribute("startedTo", startedTo);
         return "admin/executions/list";
     }
 
