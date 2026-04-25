@@ -1,6 +1,6 @@
 # Test Strategy
 
-## Phase 2 Test Goals
+## Final Test Goals
 
 - Keep the application context loading.
 - Keep the Gradle build independent from local MySQL.
@@ -8,6 +8,7 @@
 - Cover success and failure execution paths.
 - Cover retry behavior.
 - Cover MVC redirect paths for manual execution and retry.
+- Protect the reviewer path: unauthenticated redirect, form login, dashboard, monitoring summaries, interface detail, execution history, and protocol-specific result visibility.
 
 ## Current Tests
 
@@ -18,6 +19,9 @@
 - `InterfaceExecutionServiceTest`
 - `InterfaceDefinitionControllerTest`
 - `InterfaceExecutionControllerTest`
+- `AdminSecurityAccessControlTest`
+- `OperationsMonitoringServiceTest`
+- Protocol executor tests for REST, SOAP, MQ, SFTP/FTP, and BATCH behavior
 
 ## Manual Verification
 
@@ -30,7 +34,7 @@ After MySQL is configured:
 5. Retry the failed execution.
 6. Open execution history and detail pages.
 
-## Future Automated Tests
+## Phase Coverage
 
 | Phase | Test Focus |
 | --- | --- |
@@ -40,4 +44,10 @@ After MySQL is configured:
 | Phase 6 | File transfer adapter tests with local test doubles |
 | Phase 7 | Spring Batch job tests |
 | Phase 8 | Monitoring aggregation tests |
-| Phase 9 | Performance smoke tests and demo regression suite |
+| Phase 9 | Security access control, grouped monitoring aggregation, final build/test verification |
+
+## Remaining Test Opportunities
+
+- Browser-level end-to-end tests for the full demo path.
+- Larger data-volume tests for dashboard and monitoring query performance.
+- Contract-style tests against external production-grade protocol infrastructure.

@@ -1,6 +1,6 @@
 # ERD
 
-Phase 7 extends the schema through `V8__phase_7_real_batch_integration.sql`.
+The final Phase 9 schema is built by the Flyway migration chain through `V8__phase_7_real_batch_integration.sql`. Phase 9 does not add a schema migration; final monitoring and demo-readiness improvements reuse existing operational tables.
 
 ## Logical ERD
 
@@ -68,7 +68,17 @@ erDiagram
     }
 ```
 
-## Phase 7 Migration Notes
+## Core Table Groups
+
+| Group | Tables |
+| --- | --- |
+| Admin/master data | `admin_user`, `partner_company`, `internal_system`, `interface_definition` |
+| Unified execution | `interface_execution`, `interface_execution_step`, `interface_retry_task` |
+| Protocol configuration | `rest_endpoint_config`, `soap_endpoint_config`, `mq_channel_config`, `file_transfer_config`, `batch_job_config` |
+| Protocol history | `mq_message_history`, `file_transfer_history`, `batch_run_history`, `batch_step_history` |
+| Audit/framework | `audit_log`, Spring Batch metadata tables |
+
+## Final Migration Notes
 
 V8 adds:
 
@@ -79,3 +89,5 @@ V8 adds:
 - sample batch interfaces `IF_BATCH_SETTLEMENT_001` and `IF_BATCH_RETRY_AGG_001`
 
 Spring Batch metadata tables are operational framework tables. Portfolio-facing batch visibility is stored in `batch_run_history` and `batch_step_history`.
+
+Phase 9 adds no new database objects. Dashboard, monitoring, and demo-readiness work read from these tables through repository queries and view models.

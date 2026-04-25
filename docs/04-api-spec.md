@@ -1,6 +1,6 @@
 # API Spec
 
-Phase 8 remains a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local REST/SOAP simulator endpoints. Monitoring views are authenticated admin pages backed by read-only aggregation services.
+The final Phase 9 application remains a server-rendered Thymeleaf admin console. JSON/XML endpoints are limited to smoke and local REST/SOAP simulator endpoints. Monitoring views are authenticated admin pages backed by read-only aggregation services.
 
 ## Public/System Endpoints
 

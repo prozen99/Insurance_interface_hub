@@ -671,3 +671,50 @@ Fix:
 Prevention:
 
 - For production, introduce rollup tables, scheduled metric snapshots, or an external observability store before execution volume grows significantly.
+
+## Repetitive Protocol Summary Queries
+
+Symptom:
+
+- Dashboard protocol cards work correctly, but the code issues repeated count queries per protocol and status.
+
+Cause:
+
+- Earlier monitoring implementation favored very explicit repository methods for readability.
+- As protocol coverage grew to REST, SOAP, MQ, SFTP, FTP, and BATCH, repeated counts became unnecessary.
+
+Fix:
+
+- Add grouped repository queries for interface counts by protocol/status.
+- Add grouped repository queries for execution counts by protocol/status within a bounded time window.
+- Build dashboard protocol summaries from in-memory counters.
+
+Prevention:
+
+- Keep dashboard aggregation queries bounded by time window.
+- Prefer grouped read-model queries when the UI needs a full protocol overview.
+- Consider rollup tables only when real production volume requires them.
+
+## Final Local Config Secret Review
+
+Symptom:
+
+- A local profile file may contain machine-specific database values during development.
+- Sharing command output or committing local config could expose a real password.
+
+Cause:
+
+- Local IntelliJ demos often use developer-managed MySQL credentials.
+- The project allows local overrides, but examples and docs must remain placeholder-based.
+
+Fix:
+
+- Do not paste real local passwords into tickets, docs, commits, or demo notes.
+- Prefer `INSURANCE_HUB_DB_URL`, `INSURANCE_HUB_DB_USERNAME`, and `INSURANCE_HUB_DB_PASSWORD` environment variables.
+- Treat `application-local.yml` as local-only when it contains real machine credentials.
+
+Prevention:
+
+- Review `git diff` before committing.
+- Keep `application-local.example.yml` placeholder-based.
+- Mention credential handling in the README and runbook.

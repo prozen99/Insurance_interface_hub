@@ -2,7 +2,7 @@
 
 ## Architecture Style
 
-Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 8 adds a read-only monitoring layer over the execution, retry, MQ, file-transfer, and batch history already collected by earlier phases.
+Insurance Interface Hub remains a modular monolith: one Spring Boot application with clear package boundaries. Phase 9 keeps the architecture stable and focuses on final readiness: clearer documentation, stronger tests, and performance-conscious dashboard aggregation over the execution, retry, MQ, file-transfer, and batch history already collected by earlier phases.
 
 The common execution engine now creates and commits an `interface_execution` row before invoking a protocol executor, then records the result afterward. This avoids holding a database transaction open while calling HTTP, SOAP, MQ, file-transfer, or Spring Batch infrastructure.
 
@@ -35,6 +35,8 @@ It aggregates:
 - top failed interfaces
 - protocol summaries for REST, SOAP, MQ, SFTP, FTP, and BATCH
 - MQ message, file transfer, and batch run summaries
+
+Phase 9 reduces repetitive protocol summary queries by using grouped repository queries for interface counts and execution counts. The dashboard still computes summaries at request time, but bounded windows and grouped counts keep the local demo responsive without adding rollup tables.
 
 The monitoring package depends on protocol history repositories for read models only. Protocol modules still own their execution, configuration, and persistence rules.
 
@@ -88,4 +90,13 @@ Retry creates a new execution linked to the original failed execution. REST, SOA
 
 ## Database Ownership
 
-Flyway owns schema evolution. Phase 8 does not add schema because dashboard summaries are derived from existing operational tables. Existing migrations are never edited after they are applied.
+Flyway owns schema evolution. Phase 9 does not add schema because final dashboard and documentation cleanup use existing operational tables. Existing migrations are never edited after they are applied.
+
+## Final Readiness Boundary
+
+Phase 9 intentionally avoids a major rewrite. The final project remains easy to explain:
+
+- Admin and monitoring are server-rendered Thymeleaf pages.
+- Protocol modules own their own configuration and execution detail persistence.
+- The common execution engine owns unified execution, step, and retry history.
+- Documentation and tests describe the implemented local-demo behavior exactly.

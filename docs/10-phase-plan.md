@@ -114,6 +114,21 @@ Exit criteria:
 
 ## Phase 9 - Testing, Performance, Final Polish
 
-- Expand automated test suite.
-- Add performance smoke tests.
-- Polish demo data and screens.
+Status: Complete in the current codebase
+
+- Reinforced admin security access tests for unauthenticated redirects and valid login.
+- Reinforced monitoring aggregation tests for dashboard protocol summaries and failure summaries.
+- Replaced repetitive protocol summary counts with grouped repository queries.
+- Finalized README, requirements, architecture, ERD, protocol, screen, runbook, troubleshooting, and demo scenario documentation.
+- Kept REST, SOAP, MQ, SFTP, FTP, and BATCH execution paths unchanged.
+- Kept `application-local.yml` datasource defaults unchanged.
+
+Exit criteria:
+
+- `.\gradlew.bat test` succeeds.
+- `.\gradlew.bat build` succeeds.
+- App starts with the local profile when local DB credentials are available.
+- Admin login works.
+- Dashboard and monitoring pages render.
+- Representative protocol execution tests remain green.
+- Final docs explain setup, demo data, known limitations, and troubleshooting history.

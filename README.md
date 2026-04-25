@@ -2,11 +2,11 @@
 
 Korean title: &#48372;&#54744;&#49324; &#44552;&#50997; IT &#51064;&#53552;&#54168;&#51060;&#49828; &#53685;&#54633;&#44288;&#47532;&#49884;&#49828;&#53596;
 
-Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across REST, SOAP, MQ, SFTP, FTP, and BATCH protocols. Phase 8 turns the functional admin console into a demo-ready operations center with dashboard metrics, monitoring views, failure focus, retry visibility, and protocol-specific summaries.
+Insurance Interface Hub is a Spring Boot portfolio project for centrally managing insurance and financial interfaces across REST, SOAP, MQ, SFTP, FTP, and BATCH protocols. Phase 9 prepares the application for evaluator review with a coherent admin demo flow, reinforced tests, performance-conscious dashboard summaries, final documentation, and submission-ready run instructions.
 
 ## Current Phase
 
-Phase 8 - Monitoring dashboard, operational visibility, metrics views, and demo-ready UI polish
+Phase 9 - Final polish, test reinforcement, performance/documentation cleanup, and demo/submission readiness
 
 Implemented:
 
@@ -21,6 +21,8 @@ Implemented:
 - File transfer history, MQ message history, and batch run history
 - Operations dashboard with today metrics, protocol summaries, 7-day trend, top failed interfaces, pending retries, and quick links
 - Monitoring pages for failures, retries, protocol health, MQ, file transfers, and batch runs
+- Final documentation set covering requirements, architecture, protocol behavior, screens, troubleshooting, runbook, and demo scenarios
+- Security and monitoring tests that protect the first reviewer flow: login, dashboard, monitoring, execution history, and retry visibility
 
 Still intentionally out of scope:
 
@@ -38,6 +40,14 @@ Still intentionally out of scope:
 - `IF_FTP_POLICY_001`: embedded FTP upload/download demo
 - `IF_BATCH_SETTLEMENT_001`: daily interface settlement summary batch
 - `IF_BATCH_RETRY_AGG_001`: failed execution retry aggregation batch
+
+## First 5-Minute Reviewer Path
+
+1. Log in at `/login` with the local demo admin account.
+2. Review `/admin` for active interfaces, today success/failure, retry count, protocol summaries, top failures, recent executions, and trend data.
+3. Open `/admin/interfaces`, choose one seeded interface, and inspect protocol-specific settings.
+4. Execute a normal payload, then open the generated execution detail.
+5. Execute a controlled failure using `FAIL` or `forceFail=true`, then retry or rerun and review `/admin/monitoring/failures` and `/admin/monitoring/retries`.
 
 ## Local Demo Infrastructure
 
@@ -115,6 +125,23 @@ Flyway seeds a local demo admin user:
 
 The database stores a BCrypt hash, not the plain password.
 
+## Final Submission Notes
+
+Recommended materials:
+
+- `README.md` and `/docs` as the evaluator guide
+- Screenshots or a short recording of login, dashboard, interface detail, execution detail, failure/retry, and monitoring pages
+- The local MySQL setup commands and IntelliJ environment variable names
+- Sample payloads for REST, SOAP, MQ, SFTP/FTP, and BATCH demos
+- `.\gradlew.bat test` and `.\gradlew.bat build` results
+
+Known limitations:
+
+- Local demo infrastructure is intentionally embedded or in-process.
+- Secrets are not production-managed; use local environment variables or local-only config.
+- Monitoring is request-time aggregation, not a production metric warehouse or alerting stack.
+- Batch scheduling is local-demo oriented and disabled by default.
+
 ## Document Index
 
 - [Product vision](docs/00-product-vision.md)
@@ -144,4 +171,4 @@ The database stores a BCrypt hash, not the plain password.
 - Phase 6: real SFTP/FTP integration with local demo servers
 - Phase 7: real Batch integration with manual and scheduled launch support
 - Phase 8: monitoring dashboard, operational visibility, metrics views, and UI polish
-- Phase 9: testing/performance/final polish
+- Phase 9: testing, performance cleanup, final polish, and submission readiness

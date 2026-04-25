@@ -36,7 +36,7 @@ What this proves:
 
 What this proves:
 
-- Phase 8 did not break existing real protocols.
+- Final polish did not break existing real protocols.
 
 ## Scenario 4 - Batch Configuration
 
@@ -115,3 +115,17 @@ What this proves:
 
 - Operators can move from broad operational status to focused protocol and incident views.
 - Monitoring is unified without adding a separate frontend stack.
+
+## Scenario 10 - Final Submission Readiness
+
+1. Run `.\gradlew.bat test`.
+2. Run `.\gradlew.bat build`.
+3. Open `docs/12-local-runbook.md`.
+4. Open `docs/09-troubleshooting.md`.
+5. Explain the remaining local-demo limitations.
+
+What this proves:
+
+- The project is ready for evaluator review.
+- The documentation matches the implemented system.
+- Known limitations are explicit rather than hidden.

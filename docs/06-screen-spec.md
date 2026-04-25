@@ -1,13 +1,13 @@
 # Screen Spec
 
-Phase 8 uses Thymeleaf for a demo-ready operations console. It keeps the Phase 7 CRUD, execution, protocol configuration, and batch screens while adding monitoring navigation and summary pages.
+Phase 9 uses Thymeleaf for the final demo-ready operations console. It keeps the CRUD, execution, protocol configuration, monitoring, and batch screens consistent so a reviewer can move quickly from dashboard status to interface detail, execution result, failure analysis, retry, and protocol summaries.
 
 ## Common Layout
 
 Admin pages share:
 
 - Left navigation
-- Phase 8 product branding
+- Phase 9 product branding
 - Dashboard, Monitoring, Interfaces, Executions, Batch Runs, Partners, and Internal Systems links
 - Logout button
 - Flash success/error messages
@@ -116,3 +116,16 @@ Filters:
 - Started to date
 
 The list links to execution detail pages where protocol request/response, step logs, retry tasks, MQ messages, file transfers, and batch runs remain visible.
+
+## Reviewer Demo Flow
+
+The UI is optimized for this path:
+
+1. Login.
+2. Dashboard.
+3. Interface list.
+4. Interface detail and protocol configuration.
+5. Manual execution.
+6. Execution detail.
+7. Controlled failure and retry.
+8. Monitoring pages for failures, retries, protocols, files, MQ, and batch.

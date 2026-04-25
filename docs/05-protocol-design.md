@@ -1,12 +1,12 @@
 # Protocol Design
 
-## Phase 8 Purpose
+## Final Protocol Purpose
 
-Phase 8 keeps all protocol execution paths unchanged and adds unified operational visibility across them. REST, SOAP, MQ, SFTP, FTP, and BATCH continue to execute through their real local demo adapters.
+Phase 9 keeps all protocol execution paths unchanged and documents the final local-demo behavior. REST, SOAP, MQ, SFTP, FTP, and BATCH continue to execute through their real local demo adapters, while monitoring and retry visibility make the result easy to inspect.
 
 ## Current Executors
 
-| Protocol | Executor | Phase 8 Behavior |
+| Protocol | Executor | Final Behavior |
 | --- | --- | --- |
 | REST | `RestInterfaceExecutor` | Real HTTP calls with Spring `RestClient` |
 | SOAP | `SoapInterfaceExecutor` | Real SOAP XML over HTTP |

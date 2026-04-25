@@ -7,7 +7,7 @@
 - Local MySQL 8.x
 - IntelliJ IDEA or PowerShell
 
-No Docker, external MQ broker, external SFTP server, external FTP server, external scheduler, or external monitoring stack is required for Phase 8.
+No Docker, external MQ broker, external SFTP server, external FTP server, external scheduler, or external monitoring stack is required for the final Phase 9 demo.
 
 ## Database Setup
 
@@ -99,7 +99,7 @@ Generated at runtime:
 - SFTP remote root: `build/file-transfer-demo/remote/sftp`
 - FTP remote root: `build/file-transfer-demo/remote/ftp`
 
-## Verify Phase 8
+## Verify Phase 9
 
 1. Open http://localhost:8080/login.
 2. Log in.
@@ -119,6 +119,16 @@ Generated at runtime:
 16. Open `/admin/monitoring`.
 17. Open `/admin/monitoring/failures`, `/admin/monitoring/retries`, `/admin/monitoring/protocols`, `/admin/monitoring/files`, `/admin/monitoring/mq`, and `/admin/monitoring/batch`.
 18. Open `/admin/executions` and verify filters by protocol, status, trigger, and date range.
+19. Run `.\gradlew.bat test`.
+20. Run `.\gradlew.bat build`.
+
+## Submission Checklist
+
+- Keep DB credentials in environment variables or local-only config.
+- Confirm `application-local.yml` datasource defaults were not rewritten for submission.
+- Include README, `/docs`, and suggested demo scenario order.
+- Capture screenshots or a short screen recording of login, dashboard, interface detail, execution detail, failure/retry, and monitoring pages.
+- Mention local-demo limitations: embedded broker, embedded file-transfer servers, local scheduler, and request-time monitoring aggregation.
 
 ## Reset Local Database
 

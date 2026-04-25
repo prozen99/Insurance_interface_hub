@@ -3,10 +3,10 @@
 ## Project Identity
 
 - English title: Insurance Interface Hub
-- Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
-- Phase: Phase 0 - foundation, documentation baseline, local bootable skeleton
+- Korean title: &#48372;&#54744;&#49324; &#44552;&#50997; IT &#51064;&#53552;&#54168;&#51060;&#49828; &#53685;&#54633;&#44288;&#47532;&#49884;&#49828;&#53596;
+- Current phase: Phase 9 - final polish and portfolio submission readiness
 
-Insurance Interface Hub is a centralized operations platform for insurance and financial interface management. It is designed as a realistic backend portfolio project that shows how enterprise integrations can be registered, configured, executed, monitored, retried, and audited from one place.
+Insurance Interface Hub is a centralized operations console for insurance and financial interfaces. It demonstrates how enterprise integrations can be registered, configured, executed, monitored, retried, and reviewed from one Spring Boot modular monolith.
 
 ## Problem
 
@@ -19,11 +19,12 @@ Without a central hub, teams struggle to answer operational questions quickly:
 - Did today's execution succeed?
 - Which file transfer failed?
 - Is a retry pending?
-- Who changed a configuration?
+- Which batch job ran and what did it process?
+- Where can an operator inspect request, response, latency, and errors?
 
 ## Product Goal
 
-Build a single Spring Boot application that can evolve into an interface operations hub. The system should make interface metadata visible, keep execution records consistent, and provide a foundation for protocol-specific adapters without turning into separate services too early.
+Build a single Spring Boot application that feels like a realistic insurance interface operations hub. The system makes interface master data visible, executes each supported protocol through local demo infrastructure, records execution history consistently, and provides monitoring views for demo and evaluator review.
 
 ## Target Users
 
@@ -33,19 +34,19 @@ Build a single Spring Boot application that can evolve into an interface operati
 - IT auditors
 - Technical interviewers reviewing the portfolio
 
-## Phase 0 Scope
+## Final Implemented Scope
 
-Phase 0 must prove that the project is serious and bootable:
-
-- Java 21 and Spring Boot 3.x baseline
-- Local MySQL configuration
-- Flyway-managed schema baseline
-- Modular monolith package structure
-- Minimal admin dashboard placeholder
-- Smoke API and actuator health endpoint
-- Documentation set for later implementation phases
-
-Phase 0 intentionally does not implement production authentication, real protocol execution, file transfer, queue consumers, SOAP mappings, or business workflows.
+- Java 21, Spring Boot 3.x, Gradle, Thymeleaf, Spring Security, JPA, Flyway, and local MySQL
+- DB-backed admin login with BCrypt password storage
+- Partner company, internal system, and interface definition CRUD
+- Common execution engine with execution history, step logs, retry tasks, and detail pages
+- Real local REST execution with simulator endpoints
+- Real local SOAP execution with simulator endpoints
+- Real local MQ publish/consume with embedded Artemis
+- Real local SFTP and FTP upload/download flows
+- Real local Spring Batch manual and scheduled execution support
+- Operations dashboard and monitoring pages for failures, retries, protocols, file transfer, MQ, and batch
+- Documentation, troubleshooting history, runbook, and demo scenarios for portfolio submission
 
 ## Product Principles
 
@@ -54,4 +55,8 @@ Phase 0 intentionally does not implement production authentication, real protoco
 - Treat Flyway as the owner of database schema changes.
 - Keep secrets out of source control.
 - Design protocol modules around shared execution concepts.
-- Make future phases demonstrable in small increments.
+- Make the first five minutes of demo flow obvious: login, dashboard, interface detail, execution, history, failure, retry, monitoring.
+
+## Known Production Gaps
+
+This portfolio project is intentionally local-demo focused. Production adoption would need external secret management, production broker/server infrastructure, alert delivery, distributed scheduling/locking, audit hardening, and deeper performance testing.
