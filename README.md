@@ -37,6 +37,10 @@ Railway 배포는 portfolio reviewer가 화면과 주요 흐름을 빠르게 확
 
 REST/SOAP seed data는 local demo 기준 `localhost:8080` URL을 사용합니다. Railway에서 REST/SOAP 실행까지 시연하려면 배포 후 admin UI에서 REST `baseUrl`과 SOAP `endpointUrl`을 Railway public domain으로 수정하면 됩니다.
 
+Railway/Nixpacks는 Gradle 9 wrapper에서 build가 실패할 수 있어 Gradle wrapper는 `8.14.3`을 사용합니다. Railway build/start command는 [Railway 배포 가이드](docs/14-deployment-guide.md)에 정리되어 있습니다.
+
+로컬 IntelliJ terminal에서 Gradle을 실행할 때 `JAVA_HOME is not set` 오류가 나면 JDK 21 경로를 `JAVA_HOME`과 `Path`에 설정한 뒤 다시 실행합니다.
+
 ## 왜 만들었는가
 
 보험사 IT 시스템은 내부 기간계, 외부 제휴사, 은행, 결제사, 콜센터, 파일 송수신 서버 등과 다양한 방식으로 연동됩니다. 실제 운영에서는 다음과 같은 문제가 자주 발생합니다.

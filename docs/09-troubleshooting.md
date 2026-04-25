@@ -637,3 +637,66 @@ flush privileges;
 - 제출 전에는 README, submission guide, demo scenarios, local runbook을 함께 확인한다.
 - 배포 URL은 화면 확인용, 로컬 실행은 전체 protocol execution 검증용이라는 차이를 명확히 설명한다.
 - `application-local.yml`에 개인 credential이 있다면 commit 대상에서 제외한다.
+
+## Railway Nixpacks Build Failed Due To Unsupported Gradle Version 9
+
+증상:
+
+- Railway build가 Nixpacks build image 단계에서 실패한다.
+- 오류 메시지에 `Unsupported Gradle version: 9`가 표시된다.
+
+원인:
+
+- Railway/Nixpacks Java provider가 프로젝트의 Gradle 9 wrapper를 지원하지 않았다.
+- local에서는 Gradle 9가 동작하더라도 hosting platform의 buildpack/Nixpacks 지원 범위와 다를 수 있다.
+
+해결:
+
+- Gradle wrapper를 Gradle `8.14.3`으로 낮춘다.
+- `gradle/wrapper/gradle-wrapper.properties`의 distribution URL을 다음 값으로 맞춘다.
+
+```text
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.14.3-bin.zip
+```
+
+- Railway build command는 다음과 같이 실행한다.
+
+```bash
+chmod +x gradlew && ./gradlew clean bootJar -x test
+```
+
+재발 방지:
+
+- 배포 전 hosting platform의 Java/Gradle 지원 버전을 확인한다.
+- 배포 가이드에 검증된 build command를 유지한다.
+- wrapper version을 올릴 때는 local build뿐 아니라 Railway build도 함께 확인한다.
+
+## Local IntelliJ Terminal Gradle Command Failed Because JAVA_HOME Was Not Set
+
+증상:
+
+- IntelliJ terminal에서 `.\gradlew.bat --version` 또는 `.\gradlew.bat clean bootJar -x test` 실행이 실패한다.
+- 오류 메시지에 `ERROR: JAVA_HOME is not set and no 'java' command could be found in your PATH.`가 표시된다.
+
+원인:
+
+- IntelliJ IDE 자체는 bundled JBR/JDK를 사용하지만, terminal environment에는 `JAVA_HOME`과 `Path`가 설정되어 있지 않았다.
+- Windows user environment variable에 JDK 21 경로가 등록되지 않았다.
+
+해결:
+
+- 임시로 IntelliJ Project SDK/JBR 경로를 `JAVA_HOME`으로 설정한 뒤 Gradle을 실행한다.
+
+```powershell
+$env:JAVA_HOME="C:\Program Files\JetBrains\IntelliJ IDEA 2025.3.3\jbr"
+$env:Path="$env:JAVA_HOME\bin;$env:Path"
+.\gradlew.bat --version
+```
+
+- 또는 JDK 21을 설치하고 Windows user environment variable에 `JAVA_HOME`과 `Path`를 영구 등록한다.
+
+재발 방지:
+
+- terminal에서 Gradle을 실행하기 전 `java -version`을 먼저 확인한다.
+- IntelliJ Project SDK와 terminal `JAVA_HOME`이 모두 Java 21을 가리키도록 맞춘다.
+- 새 PC나 새 shell에서 demo를 진행하기 전 `.\gradlew.bat --version`으로 Gradle 실행 가능 여부를 확인한다.
