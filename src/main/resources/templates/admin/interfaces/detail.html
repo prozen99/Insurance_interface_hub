@@ -94,11 +94,11 @@
                 </div>
                 <div class="detail-item full">
                     <dt>Phase note</dt>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'REST'}">Phase 5 keeps REST on the real HTTP executor introduced in Phase 3.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">Phase 5 keeps SOAP on the real XML executor introduced in Phase 4.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">Phase 5 publishes and consumes a real JMS message through the embedded local Artemis broker.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">Phase 6 transfers real files through local demo file-transfer servers and records transfer history.</dd>
-                    <dd th:if="${interfaceDefinition.protocolType.name() == 'BATCH'}">Phase 7 launches real local Spring Batch jobs, records run metadata, and supports manual retry/rerun from execution history.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'REST'}">REST runs real local HTTP calls and records request, response, status code, latency, and errors.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SOAP'}">SOAP runs real local XML-over-HTTP calls and records request XML, response XML, SOAPAction, latency, and faults.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'MQ'}">MQ publishes and consumes a real JMS message through the embedded local Artemis broker.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'SFTP' or interfaceDefinition.protocolType.name() == 'FTP'}">File transfer runs real local upload/download flows and records transfer history.</dd>
+                    <dd th:if="${interfaceDefinition.protocolType.name() == 'BATCH'}">Batch launches real local Spring Batch jobs, records run metadata, and supports manual retry/rerun from execution history.</dd>
                 </div>
             </dl>
         </section>
