@@ -69,6 +69,15 @@ class OperationsMonitoringServiceTest {
         when(interfaceExecutionRepository.countByExecutionStatusAndStartedAtBetween(eq(ExecutionStatus.FAILED), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(2L);
         when(interfaceRetryTaskRepository.countByRetryStatus(RetryStatus.WAITING)).thenReturn(3L);
+        when(interfaceDefinitionRepository.countByProtocolTypeAndStatusGroup()).thenReturn(List.of(
+                new Object[]{ProtocolType.REST, InterfaceStatus.ACTIVE, 2L},
+                new Object[]{ProtocolType.REST, InterfaceStatus.INACTIVE, 1L}
+        ));
+        when(interfaceExecutionRepository.countByProtocolTypeAndStatusBetweenGroup(any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of(
+                        new Object[]{ProtocolType.REST, ExecutionStatus.SUCCESS, 5L},
+                        new Object[]{ProtocolType.REST, ExecutionStatus.FAILED, 1L}
+                ));
         when(interfaceExecutionRepository.findTrendSource(any(LocalDateTime.class), any(LocalDateTime.class))).thenReturn(List.of());
         when(interfaceExecutionRepository.findTopFailedInterfaces(eq(ExecutionStatus.FAILED), any(LocalDateTime.class), any(LocalDateTime.class), any(Pageable.class)))
                 .thenReturn(List.<Object[]>of(new Object[]{1L, "IF_REST_FAIL", "REST failure demo", ProtocolType.REST, 4L}));
@@ -81,6 +90,15 @@ class OperationsMonitoringServiceTest {
                 .extracting(OperationsMonitoringService.MetricCard::value)
                 .contains("8", "10", "6", "2", "3");
         assertThat(overview.protocolSummaries()).hasSize(ProtocolType.values().length);
+        assertThat(overview.protocolSummaries())
+                .filteredOn(summary -> summary.protocolType() == ProtocolType.REST)
+                .singleElement()
+                .satisfies(summary -> {
+                    assertThat(summary.totalInterfaces()).isEqualTo(3L);
+                    assertThat(summary.activeInterfaces()).isEqualTo(2L);
+                    assertThat(summary.todaySuccess()).isEqualTo(5L);
+                    assertThat(summary.todayFailure()).isEqualTo(1L);
+                });
         assertThat(overview.topFailedInterfaces()).singleElement()
                 .satisfies(failed -> {
                     assertThat(failed.interfaceCode()).isEqualTo("IF_REST_FAIL");
