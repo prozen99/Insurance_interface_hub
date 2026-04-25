@@ -610,3 +610,30 @@ flush privileges;
 - commit 전 `git diff`를 확인한다.
 - `application-local.example.yml`은 placeholder만 유지한다.
 - README와 runbook에 credential handling을 명확히 적는다.
+
+## Phase 10 제출 패키지 점검
+
+증상:
+
+- GitHub repository와 배포 URL을 제출했지만 평가자가 어디서부터 봐야 하는지 파악하기 어렵다.
+- 로컬 실행, 배포 실행, 전체 protocol demo 범위가 문서마다 다르게 설명된다.
+- 제출 자료에 실제 local DB credential이 섞일 위험이 있다.
+
+원인:
+
+- 기능 구현 문서와 제출 안내 문서의 목적이 다르다.
+- 배포 platform에서는 embedded SFTP/FTP port나 filesystem write 권한이 로컬과 다를 수 있다.
+- local-only 설정 파일과 제출용 예시 설정을 구분하지 않으면 secret 노출 위험이 생긴다.
+
+해결:
+
+- README 최상단에 제출용 요약을 추가한다.
+- `docs/14-submission-guide.md`를 만들어 GitHub 링크, 배포 URL, 데모 계정, 시연 흐름, 로컬 실행 절차, 알려진 한계를 한 곳에 정리한다.
+- `docs/12-local-runbook.md`와 `docs/13-demo-scenarios.md`를 최종 제출 흐름 기준으로 정리한다.
+- 실제 DB password는 문서에 쓰지 않고 placeholder와 환경 변수 방식만 안내한다.
+
+재발 방지:
+
+- 제출 전에는 README, submission guide, demo scenarios, local runbook을 함께 확인한다.
+- 배포 URL은 화면 확인용, 로컬 실행은 전체 protocol execution 검증용이라는 차이를 명확히 설명한다.
+- `application-local.yml`에 개인 credential이 있다면 commit 대상에서 제외한다.
