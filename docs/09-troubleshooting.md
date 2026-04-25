@@ -1,720 +1,612 @@
-# Troubleshooting
+# 장애 대응 기록
 
-Append new troubleshooting entries to this document as development continues. Use the same format: symptom, cause, fix, and prevention.
+이 문서는 개발과 로컬 데모 과정에서 실제로 만났거나 재발 가능성이 있는 문제를 정리한 기록입니다. 새 문제가 발생하면 같은 형식으로 아래에 계속 추가합니다.
 
-## MySQL Access Denied From Missing Password Environment Variable
+기본 형식:
 
-Symptom:
+- 증상
+- 원인
+- 해결
+- 재발 방지
 
-- App startup fails with MySQL access denied.
-- Hikari cannot obtain a connection.
+## MySQL Password Environment Variable 누락
 
-Cause:
+증상:
 
-- `INSURANCE_HUB_DB_PASSWORD` was not set, so the local profile used an empty password.
+- 애플리케이션 시작 시 DB 연결에 실패한다.
+- `Access denied for user` 또는 password 관련 오류가 발생한다.
+- Flyway migration이 시작되지 못한다.
 
-Fix:
+원인:
+
+- `INSURANCE_HUB_DB_PASSWORD` 환경 변수가 설정되지 않았다.
+- IntelliJ Run Configuration에 환경 변수를 넣지 않았거나 적용되지 않았다.
+- local profile이 기대하는 DB 계정과 실제 MySQL 계정이 다르다.
+
+해결:
+
+- PowerShell 또는 IntelliJ Run Configuration에 다음 값을 설정한다.
 
 ```powershell
+$env:INSURANCE_HUB_DB_URL="jdbc:mysql://localhost:3306/insurance_hub?serverTimezone=Asia/Seoul&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true"
+$env:INSURANCE_HUB_DB_USERNAME="insurance_hub_app"
 $env:INSURANCE_HUB_DB_PASSWORD="change-me"
 ```
 
-Then restart the app.
+- MySQL에서 해당 계정과 권한이 실제로 존재하는지 확인한다.
 
-Prevention:
+재발 방지:
 
-- Keep required local environment variables in `docs/12-local-runbook.md`.
-- Check IntelliJ Run Configuration environment variables before starting the app.
-- Do not put real passwords in committed YAML files.
+- README와 runbook에 환경 변수 이름을 명확히 적는다.
+- 실제 비밀번호는 문서, commit, chat text에 노출하지 않는다.
+- `application-local.example.yml`은 placeholder만 유지한다.
 
-## Flyway Checksum Mismatch After Editing Applied V1
+## Flyway Checksum Mismatch
 
-Symptom:
+증상:
 
-- App startup fails during Flyway validation.
-- Error mentions checksum mismatch for `V1__phase_0_baseline.sql`.
+- 애플리케이션 시작 중 Flyway validation이 실패한다.
+- 이미 적용된 migration의 checksum이 다르다는 오류가 나온다.
 
-Cause:
+원인:
 
-- An already-applied migration was changed after Flyway recorded its checksum in `flyway_schema_history`.
+- 이미 local DB에 적용된 `V1__...sql` 같은 migration file을 나중에 수정했다.
+- Flyway는 적용된 migration의 checksum을 `flyway_schema_history`에 저장하기 때문에 파일 내용이 바뀌면 불일치가 발생한다.
 
-Fix:
+해결:
 
-- Do not edit the applied migration again.
-- For disposable local data, drop and recreate the local database, then rerun all migrations.
-- For preserved data, restore the original migration content and add a new migration for schema changes.
+- 이미 적용된 migration은 되돌린다.
+- 변경이 필요하면 새 migration file을 추가한다.
+- local disposable DB라면 DB를 재생성하고 migration을 처음부터 다시 적용할 수 있다.
 
-Prevention:
+재발 방지:
 
-- Treat migration files as immutable once applied.
-- Add new migrations such as V2, V3, V4 for later phases.
+- "적용된 migration은 수정하지 않는다"를 원칙으로 유지한다.
+- schema 변경은 항상 `Vn__description.sql` 형태의 새 migration으로 추가한다.
 
-## Confusion Between `insurance` And `insurance_hub` Database Names
+## Database Name 혼동
 
-Symptom:
+증상:
 
-- Tables appear missing even though Flyway ran somewhere.
-- Login seed data is not found.
-- App points to a different schema than the one inspected in MySQL.
+- migration은 정상인데 table이 보이지 않는다.
+- 애플리케이션은 다른 DB schema에 연결된다.
+- `insurance`와 `insurance_hub` 중 어느 DB를 사용하는지 혼란이 생긴다.
 
-Cause:
+원인:
 
-- Local commands and configuration used inconsistent database names.
+- 개발 중 local DB 이름이 바뀌었거나, 환경 변수와 local YAML default가 서로 다른 DB를 가리킨다.
+- IntelliJ 실행 설정과 PowerShell 환경 변수가 서로 다르다.
 
-Fix:
+해결:
 
-- Standardize the app database as `insurance_hub`.
-- Confirm the URL:
+- 현재 실행 중인 profile과 datasource URL을 로그에서 확인한다.
+- 사용하려는 DB 이름을 하나로 정하고 MySQL에서 직접 확인한다.
+- evaluator용 안내는 `insurance_hub` 예시를 사용하고, 개인 local override는 별도로 관리한다.
 
-```powershell
-$env:INSURANCE_HUB_DB_URL
+재발 방지:
+
+- runbook에 권장 DB 이름과 환경 변수 예시를 명확히 둔다.
+- local-only 설정과 제출용 예시 설정을 혼동하지 않는다.
+
+## DB User 혼동
+
+증상:
+
+- 같은 password를 입력했는데도 MySQL 접속이 거부된다.
+- `root`와 `insurance_hub_app` 중 어떤 계정이 사용되는지 혼란이 생긴다.
+
+원인:
+
+- local YAML default, 환경 변수, IntelliJ 실행 설정이 서로 다른 username을 사용한다.
+- MySQL 계정 권한이 대상 schema에 부여되지 않았다.
+
+해결:
+
+- 실행 로그의 JDBC URL과 username을 확인한다.
+- MySQL에서 다음과 같이 전용 계정을 생성하고 권한을 준다.
+
+```sql
+create database if not exists insurance_hub character set utf8mb4 collate utf8mb4_0900_ai_ci;
+create user if not exists 'insurance_hub_app'@'localhost' identified by 'change-me';
+grant all privileges on insurance_hub.* to 'insurance_hub_app'@'localhost';
+flush privileges;
 ```
 
-Prevention:
+재발 방지:
 
-- Use only `insurance_hub` in docs, run configs, and SQL examples.
-- Avoid creating similarly named local schemas for this project.
+- 제출용 문서에는 전용 계정 예시를 사용한다.
+- 실제 로컬 계정 정보는 commit하지 않는다.
 
-## JMS Health Check Failure When Artemis Is Not Running
+## JMS Health Check 실패
 
-Symptom:
+증상:
 
-- Actuator health or startup diagnostics show JMS/Artemis connection failure.
-- The project is not using real MQ yet.
+- `/actuator/health`가 DOWN으로 표시된다.
+- Artemis broker를 별도로 실행하지 않았다는 오류처럼 보인다.
+- 앱 기능은 아직 MQ를 사용하지 않는데 health 때문에 시작/확인이 불안정해진다.
 
-Cause:
+원인:
 
-- Artemis dependencies are present for future MQ phases, but no local broker is running.
+- Actuator JMS health indicator가 broker 연결을 검사한다.
+- 개발 초기에 broker가 local에서 실행되지 않는 상태였거나, embedded broker 설정과 health check 기대가 맞지 않았다.
 
-Fix:
+해결:
 
-- Keep local JMS health disabled:
+- local profile에서 JMS health check를 비활성화한다.
+- Phase 5 이후에는 embedded in-vm Artemis를 사용하여 별도 broker 없이 MQ demo를 수행한다.
 
-```yaml
-management:
-  health:
-    jms:
-      enabled: false
-```
+재발 방지:
 
-Prevention:
+- local demo infrastructure는 app startup과 함께 동작하도록 둔다.
+- health check는 실제 demo 운영에 필요한 항목만 켠다.
 
-- Do not enable JMS health checks until the MQ phase has a documented local broker setup.
-- Keep Phase 3 focused on REST only.
+## IntelliJ Environment Variable 설정 위치 혼동
 
-## IntelliJ Environment Variable Field Is Hidden
+증상:
 
-Symptom:
+- PowerShell에서는 실행되지만 IntelliJ Run Configuration에서는 DB 접속이 실패한다.
+- 환경 변수를 넣었다고 생각했지만 애플리케이션이 읽지 못한다.
 
-- The app starts from IntelliJ without expected DB variables.
-- PowerShell runs work, but IntelliJ runs fail.
+원인:
 
-Cause:
+- IntelliJ Run Configuration에서 Environment variables 입력란이 option 설정 아래에 숨겨져 있다.
+- 실행 configuration을 복사하면서 환경 변수 값이 빠졌다.
 
-- IntelliJ Run Configuration hides Environment variables under expanded option settings depending on UI layout/version.
+해결:
 
-Fix:
+- Run/Debug Configurations에서 Environment variables 입력란을 열고 DB 관련 값을 명시한다.
+- 적용 후 실행 로그에서 datasource URL과 active profile을 확인한다.
 
-- Open Run Configuration.
-- Expand Modify options or More options.
-- Enable or reveal Environment variables.
-- Add `INSURANCE_HUB_DB_URL`, `INSURANCE_HUB_DB_USERNAME`, and `INSURANCE_HUB_DB_PASSWORD`.
+재발 방지:
 
-Prevention:
+- runbook에 IntelliJ 환경 변수 설정을 별도로 언급한다.
+- demo 전에는 PowerShell 실행과 IntelliJ 실행 중 하나를 기준으로 정하고 확인한다.
 
-- Prefer checking the run configuration before DB troubleshooting.
-- Keep the PowerShell run command documented as a fallback.
+## Environment Variable 이름 오타
 
-## Environment Variable Name Mismatch Or Typo
+증상:
 
-Symptom:
+- 환경 변수를 설정했는데도 기본값 또는 빈 password가 사용된다.
+- DB 접속 실패 원인이 password 누락처럼 보인다.
 
-- The app ignores a value that appears to be set.
-- Startup still uses an empty password or default URL.
+원인:
 
-Cause:
+- `INSURANCE_HUB_DB_PASSWORD` 같은 변수 이름에 오타가 있다.
+- 변수명 prefix나 underscore가 문서와 실행 환경에서 다르다.
 
-- Variable names did not match the Spring placeholders exactly, or a typo was introduced.
+해결:
 
-Fix:
+- README와 runbook의 변수명을 그대로 복사해 사용한다.
+- PowerShell에서 `Get-ChildItem Env:INSURANCE_HUB*`로 실제 값 존재 여부를 확인한다.
 
-- Use these exact names:
+재발 방지:
 
-```powershell
-$env:INSURANCE_HUB_DB_URL
-$env:INSURANCE_HUB_DB_USERNAME
-$env:INSURANCE_HUB_DB_PASSWORD
-$env:INSURANCE_HUB_PORT
-```
+- 환경 변수 이름은 한 곳에 표준화한다.
+- 새 설정을 추가할 때 `app.*` namespace와 문서 예시를 함께 갱신한다.
 
-Prevention:
+## DB Password 노출 위험
 
-- Copy variable names from `application-local.yml` or the runbook.
-- Avoid similar names such as `INSURANCE_DB_PASSWORD`.
+증상:
 
-## Risk Of Exposing DB Password In Local Config Or Chat Text
+- local config나 채팅/문서에 실제 DB password가 노출될 수 있다.
+- `git diff`에 개인 local credential이 보인다.
 
-Symptom:
+원인:
 
-- A real local DB password appears in a config file, command history, screenshot, or chat message.
+- local demo를 빠르게 실행하기 위해 실제 password를 YAML에 직접 입력했거나, 로그/채팅에 그대로 붙여 넣었다.
 
-Cause:
+해결:
 
-- Local setup commands can tempt developers to paste real secrets directly into text.
+- 실제 password가 포함된 파일은 commit하지 않는다.
+- 제출용 문서는 placeholder와 environment variable 예시만 사용한다.
+- 노출된 password는 즉시 변경한다.
 
-Fix:
+재발 방지:
 
-- Rotate the local password if it was exposed.
-- Replace committed examples with placeholders.
-- Keep real values only in environment variables or local-only IDE settings.
+- commit 전 `git diff`를 확인한다.
+- `application-local.yml`은 local-only 파일로 취급한다.
+- `application-local.example.yml`에는 실제 credential을 넣지 않는다.
 
-Prevention:
+## REST Simulator URL 포트 불일치
 
-- Never commit real credentials.
-- Use placeholder values in docs.
-- Avoid pasting real secrets into shared messages or screenshots.
+증상:
 
-## REST Simulator POST Returns 403
+- REST 실행이 connection refused로 실패한다.
+- 애플리케이션은 다른 port로 실행 중인데 REST config는 `http://localhost:8080`을 가리킨다.
 
-Symptom:
+원인:
 
-- REST execution reaches the same application but receives HTTP 403.
-- Execution detail shows a REST HTTP error instead of simulator JSON.
+- smoke test나 IntelliJ 실행에서 `server.port`를 변경했지만 REST endpoint config의 `baseUrl`은 갱신하지 않았다.
 
-Cause:
+해결:
 
-- Spring Security CSRF protection applies to POST requests by default.
+- admin REST config 화면에서 `baseUrl`을 현재 실행 port에 맞춘다.
+- 기본 demo는 `http://localhost:8080` 기준으로 실행한다.
 
-Fix:
+재발 방지:
 
-- Permit `/simulator/**`.
-- Ignore CSRF for `/simulator/**` because these endpoints are local demo targets for the server-side executor.
+- demo 중 port를 변경했다면 REST/SOAP config도 함께 확인한다.
+- port 충돌이 없으면 기본 8080을 사용한다.
 
-Prevention:
+## SOAP Fault 확인
 
-- Keep simulator endpoints separate from admin endpoints.
-- Do not reuse simulator CSRF behavior as a pattern for real external APIs.
+증상:
 
-## REST Execution Cannot Connect To Simulator
+- SOAP 실행이 실패하고 execution detail에 fault/error message가 표시된다.
 
-Symptom:
+원인:
 
-- Execution detail shows `REST_CLIENT_ERROR`.
-- Error message mentions connection refused or timeout.
+- request XML에 `FAIL`이 포함되어 simulator가 통제된 SOAP fault를 반환했다.
+- 또는 SOAP endpoint URL, SOAPAction, XML 구조가 설정과 맞지 않는다.
 
-Cause:
+해결:
 
-- The REST config points to the wrong port or the app is not running.
+- 정상 payload로 다시 실행한다.
+- SOAP config의 `endpointUrl`, `soapAction`, `requestTemplateXml`을 확인한다.
 
-Fix:
+재발 방지:
 
-- If the app runs on 8080, use `http://localhost:8080`.
-- If `INSURANCE_HUB_PORT` is changed, update the REST config base URL to the same port.
+- demo용 정상 XML과 실패 XML을 분리해 보관한다.
+- SOAP simulator path를 변경하지 않는다.
 
-Prevention:
+## Embedded Artemis Startup Issue
 
-- Keep seeded demos on port 8080.
-- When changing ports, update REST config before manual execution.
+증상:
 
-## Thymeleaf MVC Test Fails Because `_csrf` Is Null
+- 앱 시작 시 Artemis 관련 로그가 길게 출력되거나 broker startup이 실패한다.
+- MQ 실행이 destination 연결 오류로 실패한다.
 
-Symptom:
+원인:
 
-- A `@WebMvcTest` that renders an admin template fails with a Thymeleaf `SpelEvaluationException`.
-- The failing expression is `_csrf.parameterName` in the sidebar or form template.
+- embedded Artemis broker가 app process 내부에서 시작되며, 이전 실행의 runtime file이나 port/resource 상태가 영향을 줄 수 있다.
+- local 환경에서 broker persistence directory가 꼬일 수 있다.
 
-Cause:
+해결:
 
-- The MVC test disabled filters or did not provide a CSRF request attribute, but the shared Thymeleaf layout expects `_csrf`.
+- 애플리케이션 process를 완전히 종료하고 다시 실행한다.
+- 필요하면 local runtime directory를 정리한다.
+- MQ health check와 embedded broker 설정을 확인한다.
 
-Fix:
+재발 방지:
 
-- Add a `DefaultCsrfToken` request attribute in the test request.
+- demo 전에 이전 Java process가 남아 있지 않은지 확인한다.
+- MQ는 별도 외부 broker가 아니라 embedded demo broker임을 문서에 명확히 둔다.
 
-Prevention:
+## MQ Consumer Failure Demo
 
-- Any MVC test that renders admin templates should provide `_csrf`, even when security filters are disabled.
+증상:
 
-## SOAP Execution Cannot Connect To Simulator
+- MQ publish는 성공했지만 consume/process status가 FAILED로 기록된다.
 
-Symptom:
+원인:
 
-- Execution detail shows `SOAP_CLIENT_ERROR`.
-- Error message mentions connection refused or timeout.
+- payload에 `FAIL`이 포함되어 consumer processing failure를 의도적으로 발생시켰다.
 
-Cause:
+해결:
 
-- The SOAP config points to the wrong port, or the app is not running.
+- 정상 payload로 다시 실행한다.
+- execution detail과 MQ monitoring에서 publish status와 consume status를 분리해 확인한다.
 
-Fix:
+재발 방지:
 
-- If the app runs on 8080, use `http://localhost:8080/simulator/soap/policy-inquiry`.
-- If `INSURANCE_HUB_PORT` is changed, update the SOAP config endpoint URL to the same port.
+- demo에서 "producer 성공"과 "consumer 처리 실패"를 구분해 설명한다.
 
-Prevention:
+## Local Port Conflict
 
-- Keep seeded demos on port 8080.
-- When changing ports, update REST and SOAP configs before manual execution.
+증상:
 
-## SOAP Config Rejects Request Template XML
+- 앱 시작 시 `Port 8080 was already in use` 또는 SFTP/FTP port bind 오류가 발생한다.
+- `10021`, `10022` port를 사용할 수 없다는 메시지가 나온다.
 
-Symptom:
+원인:
 
-- Saving the SOAP config form returns a validation error for request template XML.
+- IntelliJ에서 이전 app instance가 아직 실행 중이다.
+- 다른 process가 8080, 10021, 10022 port를 사용하고 있다.
 
-Cause:
+해결:
 
-- The XML is not well-formed, or it contains a disallowed document type declaration.
+- 기존 Java process를 종료한다.
+- smoke test에서는 임시로 `--server.port=18080`을 사용할 수 있다.
+- 파일 전송 서버가 필요 없는 smoke test라면 `--app.file-transfer.sftp.enabled=false`, `--app.file-transfer.ftp.enabled=false`를 사용할 수 있다.
 
-Fix:
+재발 방지:
 
-- Use a complete SOAP envelope with matching opening and closing tags.
-- Do not include `DOCTYPE`.
+- demo 전 Task Manager나 terminal에서 실행 중인 Java process를 확인한다.
+- 기본 demo port 목록을 runbook에 적어둔다.
 
-Prevention:
+## Embedded SFTP/FTP Server Startup Issue
 
-- Start from the seeded template on `IF_SOAP_POLICY_001`.
-- Keep simulator templates small and readable for local demos.
+증상:
 
-## SOAP Fault Appears As A Failed Execution
+- SFTP 또는 FTP demo server가 시작되지 않는다.
+- file transfer 실행이 connection refused 또는 login failure로 실패한다.
 
-Symptom:
+원인:
 
-- Execution status is FAILED.
-- Response XML contains `<soapenv:Fault>`.
-- HTTP status is 500.
+- port conflict, local firewall, 이전 process 잔존, runtime directory 문제 중 하나일 가능성이 높다.
 
-Cause:
+해결:
 
-- The local simulator returns a controlled SOAP fault when request XML contains `FAIL`.
+- 앱을 완전히 종료 후 재시작한다.
+- `build/file-transfer-demo` directory 상태를 확인한다.
+- SFTP는 `127.0.0.1:10022`, FTP는 `127.0.0.1:10021`을 사용한다.
 
-Fix:
+재발 방지:
 
-- Remove `FAIL` from the request XML for success demos.
-- Keep `FAIL` when demonstrating failure handling and retry.
+- demo 전 port 사용 여부를 확인한다.
+- file transfer demo directory는 generated runtime file로 취급한다.
 
-Prevention:
+## File Download Path Missing
 
-- Treat `FAIL` as a deliberate local simulator trigger, not a production rule.
+증상:
 
-## Phase 5 Compile Error From Ambiguous `Configuration` Import
+- download 실행이 실패하고 remote file을 찾을 수 없다는 오류가 나온다.
 
-Symptom:
+원인:
 
-- `compileJava` fails in `LocalMqConfig`.
-- Error mentions that `Configuration` is ambiguous between Artemis and Spring.
+- embedded server remote root에 요청한 remote file path가 존재하지 않는다.
 
-Cause:
+해결:
 
-- The class imported both `org.apache.activemq.artemis.core.config.Configuration` and `org.springframework.context.annotation.Configuration`.
+- 성공 demo에는 `/outbox/sample-download.txt`를 사용한다.
+- custom file은 먼저 upload하거나 remote demo directory에 file을 만든다.
 
-Fix:
+재발 방지:
 
-- Keep the Spring annotation import.
-- Use the fully qualified Artemis type in the local variable declaration.
-
-Prevention:
-
-- Avoid single-type imports when two framework types share common names such as `Configuration`.
-- Prefer descriptive variable names and fully qualified names in integration configuration classes.
-
-## Embedded Artemis Server Id Must Match Client URL
-
-Symptom:
-
-- MQ publish or consume fails with an in-vm connection error.
-- The app starts, but the JMS client cannot connect to `vm://{serverId}`.
-
-Cause:
-
-- The embedded broker acceptor used the default in-vm server id while the connection factory URL used the configured `app.mq.embedded.server-id`.
-
-Fix:
-
-- Pass `TransportConstants.SERVER_ID_PROP_NAME` into the in-vm acceptor configuration.
-- Keep `ActiveMQConnectionFactory("vm://" + app.mq.embedded.server-id)` aligned with the embedded broker.
-
-Prevention:
-
-- When adding local broker properties, verify both server startup and client factory creation use the same value.
-- Keep an automated publish/consume test with a non-default server id.
-
-## MQ Consumer Failure Is Separate From Publish Success
-
-Symptom:
-
-- Execution status is FAILED even though an MQ message id was generated.
-- MQ message history shows publish SUCCESS and consume FAILED.
-
-Cause:
-
-- Phase 5 deliberately distinguishes producer success from consumer processing success.
-- Payloads containing `FAIL` are published, then rejected by the local demo consumer rule.
-
-Fix:
-
-- Remove `FAIL` from the payload for success demos.
-- Keep `FAIL` when demonstrating failed consumer processing and retry.
-
-Prevention:
-
-- Explain the two-stage MQ status model during demos.
-- Check the MQ message history section before assuming publish failed.
-
-## Embedded Broker Is For Local Demo Only
-
-Symptom:
-
-- A developer expects an external Artemis console, port, or Docker container.
-- No external broker process appears in Task Manager.
-
-Cause:
-
-- Phase 5 uses an embedded in-vm Artemis broker inside the Spring Boot process.
-
-Fix:
-
-- Start only the Spring Boot application.
-- Use the seeded `IF_MQ_POLICY_001` interface to publish and consume messages locally.
-
-Prevention:
-
-- Keep production broker setup out of Phase 5.
-- Document any future external broker migration as a separate phase decision.
-
-## Embedded SFTP Or FTP Port Conflict
-
-Symptom:
-
-- App startup fails during Phase 6.
-- Error mentions that port `10022` or `10021` is already in use.
-
-Cause:
-
-- The embedded local SFTP or FTP demo server tries to bind a port already used by another process.
-
-Fix:
-
-- Stop the process using the port, or change `app.file-transfer.sftp.port` / `app.file-transfer.ftp.port`.
-- If the port is changed, update the matching SFTP/FTP config row in the admin UI.
-
-Prevention:
-
-- Keep only one local app instance running during demos.
-- Use `Get-NetTCPConnection -LocalPort 10022` or `10021` before starting if startup fails.
-
-## SFTP Host Key Warning In Tests Or Logs
-
-Symptom:
-
-- Logs show an unverified SFTP host key warning.
-- File transfer still succeeds.
-
-Cause:
-
-- The local demo SFTP client allows unknown keys because the embedded server generates a project-local demo host key.
-
-Fix:
-
-- No fix is required for the local demo path.
-- For production, configure a known-hosts file or a pinned host key.
-
-Prevention:
-
-- Do not copy `allowUnknownKeys=true` into production SFTP configuration.
-- Keep the warning documented as local-demo-only behavior.
-
-## File Upload Fails Because Local File Is Missing
-
-Symptom:
-
-- Execution status is FAILED.
-- Error mentions that the local upload file does not exist.
-
-Cause:
-
-- Upload reads from `build/file-transfer-demo/local/input`, and the requested file name is not present there.
-
-Fix:
-
-- Use `sample-upload.txt`, or place a demo file in `build/file-transfer-demo/local/input`.
-
-Prevention:
-
-- Keep demo file names simple.
-- Avoid entering full local paths in the manual execution form.
-
-## File Download Fails Because Remote File Is Missing
-
-Symptom:
-
-- Execution status is FAILED.
-- Error mentions a transfer or read failure for the remote path.
-
-Cause:
-
-- Download reads from the embedded server remote root. The requested remote file path does not exist.
-
-Fix:
-
-- Use `/outbox/sample-download.txt` for a success demo.
-- For custom files, upload first or create the file under the correct remote demo directory.
-
-Prevention:
-
-- Document demo remote roots:
+- demo remote root를 문서화한다.
   - SFTP: `build/file-transfer-demo/remote/sftp`
   - FTP: `build/file-transfer-demo/remote/ftp`
 
-## FTP Passive Mode Issues
+## FTP Passive Mode Issue
 
-Symptom:
+증상:
 
-- FTP login succeeds but upload/download hangs or fails during data transfer.
+- FTP login은 성공하지만 upload/download가 멈추거나 data transfer에서 실패한다.
 
-Cause:
+원인:
 
-- FTP uses a separate data connection. Active/passive mode can matter even on localhost.
+- FTP는 control connection과 data connection이 분리되어 있어 passive mode 설정과 local firewall 영향을 받을 수 있다.
 
-Fix:
+해결:
 
-- Keep passive mode enabled for the local demo.
-- Confirm local firewall or security software is not blocking loopback data ports.
+- local demo에서는 passive mode를 켠 상태로 유지한다.
+- loopback data port가 보안 프로그램에 의해 차단되지 않는지 확인한다.
 
-Prevention:
+재발 방지:
 
-- Keep FTP passive mode visible in the config UI.
-- Prefer SFTP for simpler production network posture unless FTP is explicitly required.
+- FTP passive mode를 config UI에서 확인 가능하게 둔다.
+- 운영 환경에서는 FTP보다 SFTP 사용을 우선 검토한다.
 
 ## File Transfer Path Traversal Rejected
 
-Symptom:
+증상:
 
-- Execution fails before opening SFTP/FTP connection.
-- Error mentions that local file name or remote path cannot contain traversal.
+- SFTP/FTP 연결 전에 실행이 실패한다.
+- local file name이나 remote path에 traversal을 사용할 수 없다는 오류가 나온다.
 
-Cause:
+원인:
 
-- The local demo intentionally blocks `..`, absolute local paths, and nested local file paths.
+- local demo는 `..`, absolute local path, nested local file path를 의도적으로 차단한다.
 
-Fix:
+해결:
 
-- Use a simple local file name such as `sample-upload.txt`.
-- Use an absolute remote path such as `/inbox/sample-upload.txt`.
+- `sample-upload.txt` 같은 단순 file name을 사용한다.
+- remote path는 `/inbox/sample-upload.txt`처럼 절대 remote path를 사용한다.
 
-Prevention:
+재발 방지:
 
-- Keep local demo files under the project-local demo directory.
-- Do not expose arbitrary filesystem paths through the admin form.
+- local demo file은 project-local demo directory 아래에서만 다룬다.
+- admin form으로 임의 filesystem path를 노출하지 않는다.
 
-## Spring Batch Metadata Tables Missing
+## Spring Batch Metadata Table 누락
 
-Symptom:
+증상:
 
-- Batch execution fails at launch.
-- Error mentions missing `BATCH_JOB_INSTANCE`, `BATCH_JOB_EXECUTION`, or sequence tables.
+- Batch 실행이 launch 단계에서 실패한다.
+- `BATCH_JOB_INSTANCE`, `BATCH_JOB_EXECUTION`, sequence table이 없다는 오류가 나온다.
 
-Cause:
+원인:
 
-- Spring Batch needs metadata tables, and the project keeps `spring.batch.jdbc.initialize-schema=never` so Flyway owns schema creation.
+- Spring Batch metadata table이 필요하지만, 이 프로젝트는 `spring.batch.jdbc.initialize-schema=never`로 두고 Flyway가 table을 생성한다.
 
-Fix:
+해결:
 
-- Apply `V8__phase_7_real_batch_integration.sql`.
-- Confirm Flyway has migrated the local database to version 8.
+- `V8__phase_7_real_batch_integration.sql`이 적용되었는지 확인한다.
+- Flyway schema version이 8인지 확인한다.
 
-Prevention:
+재발 방지:
 
-- Do not enable Spring Batch auto schema initialization for this project.
-- Keep Batch metadata changes in Flyway migrations.
+- Spring Batch auto schema initialization을 켜지 않는다.
+- Batch metadata 변경은 Flyway migration에 포함한다.
 
 ## Duplicate Spring Batch Job Parameters
 
-Symptom:
+증상:
 
-- A manual rerun fails with a message that a job instance already exists.
+- 같은 parameter로 Batch를 다시 실행하면 job instance가 이미 존재한다는 오류가 발생한다.
 
-Cause:
+원인:
 
-- Spring Batch identifies job instances by identifying parameters.
-- Running with identical parameters can collide unless a unique run parameter is added.
+- Spring Batch는 identifying parameter로 job instance를 구분한다.
+- 완전히 같은 parameter로 재실행하면 같은 job instance로 판단될 수 있다.
 
-Fix:
+해결:
 
-- Phase 7 adds a unique `run.id` parameter for every launch.
+- 매 실행마다 고유한 `run.id` parameter를 추가한다.
 
-Prevention:
+재발 방지:
 
-- Keep `run.id` or an equivalent unique launch parameter in future Batch launch code.
+- Batch launch code에서 `run.id` 또는 동등한 unique parameter를 유지한다.
 
-## Launching Batch Inside A Long Transaction
+## 긴 Transaction 안에서 Batch Launch
 
-Symptom:
+증상:
 
-- Batch launch can fail with transaction state errors or lock unexpectedly.
+- Batch launch 중 transaction state 오류가 발생하거나 lock이 예상보다 오래 유지된다.
 
-Cause:
+원인:
 
-- Spring Batch job repository work should not be launched while a caller holds a broad business transaction.
+- Spring Batch job repository 작업은 넓은 business transaction 안에서 실행하지 않는 것이 안전하다.
 
-Fix:
+해결:
 
-- Phase 7 records the running `interface_execution` first, invokes the protocol executor outside that transaction, then records results afterward.
+- running `interface_execution`을 먼저 저장한다.
+- protocol executor 호출은 긴 transaction 밖에서 수행한다.
+- 결과 저장은 별도 흐름으로 처리한다.
 
-Prevention:
+재발 방지:
 
-- Do not wrap external protocol calls or Spring Batch launches in one large database transaction.
+- 외부 protocol 호출이나 Spring Batch launch를 하나의 큰 DB transaction으로 감싸지 않는다.
 
 ## Batch Scheduler Does Not Fire
 
-Symptom:
+증상:
 
-- A batch config has a cron expression, but no scheduled execution appears.
+- Batch config에 cron expression이 있지만 scheduled execution이 생성되지 않는다.
 
-Cause:
+원인:
 
-- The app-level scheduler is disabled by default, or the batch config `enabled` flag is off.
+- app-level scheduler가 기본적으로 꺼져 있다.
+- Batch config의 `enabled` flag가 꺼져 있다.
 
-Fix:
+해결:
 
-- Set `app.batch.scheduler.enabled=true`.
-- Enable the batch config in the admin UI.
-- Use a six-field Spring cron expression such as `0/30 * * * * *`.
+- `app.batch.scheduler.enabled=true`를 설정한다.
+- admin UI에서 Batch config를 enabled로 변경한다.
+- `0/30 * * * * *` 같은 six-field Spring cron expression을 사용한다.
 
-Prevention:
+재발 방지:
 
-- Keep scheduler assumptions explicit in the runbook.
-- Use manual execution for demos when timing is not the focus.
+- scheduler 기본값이 비활성화라는 점을 runbook에 명시한다.
+- 시연에서는 timing이 중요하지 않으면 manual execution을 사용한다.
 
 ## Controlled Batch Failure Keeps Failing On Retry
 
-Symptom:
+증상:
 
-- A failed batch execution is retried, but the retry fails with the same forced failure.
+- 실패한 Batch execution을 retry했는데 같은 오류로 다시 실패한다.
 
-Cause:
+원인:
 
-- Retry reuses the original request payload for auditability.
-- If the original payload contains `FAIL` or `forceFail=true`, retry repeats that same deterministic failure.
+- retry는 auditability를 위해 원본 request payload를 그대로 사용한다.
+- 원본 payload에 `FAIL` 또는 `forceFail=true`가 있으면 deterministic failure가 반복된다.
 
-Fix:
+해결:
 
-- Run a new manual execution with `forceFail=false` to demonstrate recovery.
-- Use retry to demonstrate audit linkage when the original input is intentionally unchanged.
+- recovery demo는 `forceFail=false`인 새 manual execution으로 보여준다.
+- retry는 같은 요청을 다시 실행한다는 audit linkage를 설명하는 용도로 사용한다.
 
-Prevention:
+재발 방지:
 
-- Explain retry as "rerun the same failed request" during demos.
-- Use a transient operational failure for future retry demos if different retry behavior is needed.
+- demo에서 retry와 corrected rerun의 차이를 명확히 설명한다.
 
-## Batch `forceFail=false` Still Fails
+## Batch `forceFail=false`가 실패로 처리됨
 
-Symptom:
+증상:
 
-- A manual batch execution with payload `{"businessDate":"TODAY","forceFail":false}` fails.
-- The execution detail shows Spring Batch parameters with `forceFail=true`.
+- `{"businessDate":"TODAY","forceFail":false}`로 실행했는데 Batch가 실패한다.
+- execution detail의 Spring Batch parameter에 `forceFail=true`가 보인다.
 
-Cause:
+원인:
 
-- The initial controlled-failure detector searched the entire raw JSON text for `FAIL`.
-- The key name `forceFail` itself contains `FAIL`, so even a false value was treated as a failure signal.
+- 초기 failure detector가 raw JSON text 전체에서 `FAIL`을 검색했다.
+- field name `forceFail` 자체에 `FAIL`이 포함되어 false 값도 실패 신호로 처리되었다.
 
-Fix:
+해결:
 
-- Parse JSON payloads first.
-- Treat `forceFail=true` as explicit failure.
-- For JSON payloads, scan values rather than field names for the demo `FAIL` token.
+- JSON payload를 먼저 parsing한다.
+- `forceFail=true`만 명시적 실패로 처리한다.
+- JSON payload에서는 field name이 아니라 value에서 demo `FAIL` token을 검사한다.
 
-Prevention:
+재발 방지:
 
-- Add regression tests that capture launched Spring Batch parameters.
-- Keep demo failure rules narrow enough that control field names cannot trigger them accidentally.
+- launched Spring Batch parameter를 확인하는 regression test를 둔다.
+- demo failure rule은 control field name과 충돌하지 않게 좁게 정의한다.
 
-## Monitoring Page Fails In MVC Tests Because CSRF Is Missing
+## Monitoring MVC Test에서 CSRF 누락
 
-Symptom:
+증상:
 
-- A monitoring controller MVC test fails while parsing the shared sidebar fragment.
-- The error mentions `_csrf.parameterName` on a null object.
+- monitoring controller MVC test가 shared sidebar fragment 렌더링 중 실패한다.
+- `_csrf.parameterName`이 null이라는 오류가 나온다.
 
-Cause:
+원인:
 
-- Some MVC tests disable Spring Security filters, so the request does not contain a CSRF token.
-- The shared sidebar always tried to render the logout form hidden CSRF input.
+- 일부 MVC test는 Spring Security filter를 비활성화한다.
+- shared sidebar가 항상 logout form의 hidden CSRF input을 렌더링하려고 했다.
 
-Fix:
+해결:
 
-- Render the hidden CSRF input only when `_csrf` exists.
-- Keep the logout form unchanged for real authenticated browser sessions where Spring Security supplies the token.
+- `_csrf`가 존재할 때만 hidden CSRF input을 렌더링한다.
+- 실제 인증 browser session에서는 Spring Security가 CSRF token을 제공하므로 logout form은 정상 동작한다.
 
-Prevention:
+재발 방지:
 
-- Shared Thymeleaf fragments should tolerate test contexts with filters disabled.
-- Add controller tests for new admin pages when adding navigation fragments.
+- shared Thymeleaf fragment는 security filter가 없는 test context도 견딜 수 있게 만든다.
+- 새 admin page를 추가할 때 controller rendering test를 함께 추가한다.
 
-## Dashboard Aggregation Load Concerns
+## Dashboard Aggregation Load Concern
 
-Symptom:
+증상:
 
-- Dashboard pages may become slower if execution history grows large.
+- 실행 이력이 많아질수록 dashboard 조회가 느려질 수 있다.
 
-Cause:
+원인:
 
-- Phase 8 summaries are derived from operational tables at request time.
-- The current implementation is intentionally simple for a portfolio demo.
+- 현재 monitoring summary는 운영 table에서 요청 시점에 집계한다.
+- 포트폴리오 demo를 위해 단순하고 설명 가능한 구조를 선택했다.
 
-Fix:
+해결:
 
-- Keep time windows bounded, such as today and last 7 days.
-- Use indexed columns such as protocol, status, and started time.
+- 오늘, 최근 7일 같은 bounded time window를 사용한다.
+- protocol, status, started time 같은 column을 기준으로 grouped query를 사용한다.
 
-Prevention:
+재발 방지:
 
-- For production, introduce rollup tables, scheduled metric snapshots, or an external observability store before execution volume grows significantly.
+- 운영 규모로 커지면 rollup table, scheduled metric snapshot, external observability store 도입을 검토한다.
 
 ## Repetitive Protocol Summary Queries
 
-Symptom:
+증상:
 
-- Dashboard protocol cards work correctly, but the code issues repeated count queries per protocol and status.
+- dashboard protocol card는 정상 동작하지만 protocol/status마다 count query가 반복된다.
 
-Cause:
+원인:
 
-- Earlier monitoring implementation favored very explicit repository methods for readability.
-- As protocol coverage grew to REST, SOAP, MQ, SFTP, FTP, and BATCH, repeated counts became unnecessary.
+- 초기 monitoring 구현은 명시적인 repository method를 우선했다.
+- REST, SOAP, MQ, SFTP, FTP, Batch까지 늘어나면서 반복 count가 불필요해졌다.
 
-Fix:
+해결:
 
-- Add grouped repository queries for interface counts by protocol/status.
-- Add grouped repository queries for execution counts by protocol/status within a bounded time window.
-- Build dashboard protocol summaries from in-memory counters.
+- interface count를 protocol/status 기준 grouped query로 조회한다.
+- execution count를 protocol/status/time window 기준 grouped query로 조회한다.
+- memory counter로 dashboard protocol summary를 구성한다.
 
-Prevention:
+재발 방지:
 
-- Keep dashboard aggregation queries bounded by time window.
-- Prefer grouped read-model queries when the UI needs a full protocol overview.
-- Consider rollup tables only when real production volume requires them.
+- overview 화면에는 grouped read-model query를 우선 사용한다.
+- production volume이 커질 때만 rollup table을 도입한다.
 
 ## Final Local Config Secret Review
 
-Symptom:
+증상:
 
-- A local profile file may contain machine-specific database values during development.
-- Sharing command output or committing local config could expose a real password.
+- 개발자의 local profile file에 개인 DB 값이 남아 있을 수 있다.
+- command output이나 commit에 실제 password가 노출될 수 있다.
 
-Cause:
+원인:
 
-- Local IntelliJ demos often use developer-managed MySQL credentials.
-- The project allows local overrides, but examples and docs must remain placeholder-based.
+- IntelliJ local demo를 빠르게 실행하기 위해 개인 MySQL credential을 local config에 넣는 경우가 있다.
+- 예시 파일과 실제 local-only 파일의 역할이 혼동될 수 있다.
 
-Fix:
+해결:
 
-- Do not paste real local passwords into tickets, docs, commits, or demo notes.
-- Prefer `INSURANCE_HUB_DB_URL`, `INSURANCE_HUB_DB_USERNAME`, and `INSURANCE_HUB_DB_PASSWORD` environment variables.
-- Treat `application-local.yml` as local-only when it contains real machine credentials.
+- 실제 local password를 ticket, docs, commit, chat text에 붙여 넣지 않는다.
+- `INSURANCE_HUB_DB_URL`, `INSURANCE_HUB_DB_USERNAME`, `INSURANCE_HUB_DB_PASSWORD` 환경 변수를 우선 사용한다.
+- 실제 credential이 들어간 `application-local.yml`은 local-only로 취급한다.
 
-Prevention:
+재발 방지:
 
-- Review `git diff` before committing.
-- Keep `application-local.example.yml` placeholder-based.
-- Mention credential handling in the README and runbook.
+- commit 전 `git diff`를 확인한다.
+- `application-local.example.yml`은 placeholder만 유지한다.
+- README와 runbook에 credential handling을 명확히 적는다.

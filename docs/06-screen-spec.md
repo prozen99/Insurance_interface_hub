@@ -1,112 +1,133 @@
-# Screen Spec
+# 화면 명세
 
-Phase 9 uses Thymeleaf for the final demo-ready operations console. It keeps the CRUD, execution, protocol configuration, monitoring, and batch screens consistent so a reviewer can move quickly from dashboard status to interface detail, execution result, failure analysis, retry, and protocol summaries.
+Phase 9의 UI는 Thymeleaf 기반 server-rendered admin console입니다. CRUD, 실행, 프로토콜 설정, monitoring, Batch 화면을 일관된 layout으로 구성하여 평가자가 dashboard에서 문제 상황을 보고 상세 이력까지 자연스럽게 이동할 수 있도록 했습니다.
 
-## Common Layout
+## 공통 Layout
 
-Admin pages share:
+관리자 화면은 다음 요소를 공유합니다.
 
-- Left navigation
+- 왼쪽 navigation
 - Phase 9 product branding
-- Dashboard, Monitoring, Interfaces, Executions, Batch Runs, Partners, and Internal Systems links
+- Dashboard, Monitoring, Interfaces, Executions, Batch Runs, Partners, Internal Systems link
 - Logout button
-- Flash success/error messages
-- Table-based enterprise admin layout
-- Consistent status badges for execution, retry, transfer, MQ, and batch statuses
+- 성공/실패 flash message
+- table 중심의 enterprise admin layout
+- execution, retry, transfer, MQ, Batch status badge
 
 ## Dashboard
 
 Path: `/admin`
 
-Sections:
+표시 항목:
 
-- Primary operational metrics
-- Quick links for failures, retries, protocol health, and execution history
-- 7-day execution trend
-- Top failed interfaces
-- Protocol cards for REST, SOAP, MQ, BATCH, SFTP, and FTP
-- Recent executions
-- Pending retry tasks
-- File transfer, MQ, batch, and actuator health summary cards
+- 주요 운영 metric card
+- 장애, 재처리, 프로토콜 상태, 실행 이력 quick link
+- 최근 7일 실행 추이
+- 실패 상위 인터페이스
+- REST, SOAP, MQ, BATCH, SFTP, FTP protocol card
+- 최근 실행
+- 재처리 대기 task
+- 파일 전송, MQ, Batch summary card
 
 ## Monitoring Overview
 
 Path: `/admin/monitoring`
 
-Purpose:
+역할:
 
-- Give operators a compact operational snapshot.
-- Link to specialized monitoring views.
-- Reuse the same read-only monitoring summaries as the dashboard.
+- 운영자가 전체 상태를 빠르게 확인한다.
+- 장애, 재처리, 프로토콜, 파일, MQ, Batch 상세 monitoring 화면으로 이동한다.
+- Dashboard와 같은 read-only summary service를 재사용한다.
 
 ## Failure Monitoring
 
 Path: `/admin/monitoring/failures`
 
-Shows:
+표시 항목:
 
-- Top failed interfaces in the last 7 days
-- Recent failed executions
-- Links to interface detail and execution detail
+- 최근 7일 실패 상위 인터페이스
+- 최근 실패 execution
+- interface detail과 execution detail link
 
 ## Retry Monitoring
 
 Path: `/admin/monitoring/retries`
 
-Shows:
+표시 항목:
 
-- Pending retry count
-- New waiting retries today
-- Retry tasks completed in the last 7 days
-- Waiting retry task table
-- Recent retry task table
+- 재처리 대기 count
+- 오늘 새로 생성된 waiting retry count
+- 최근 7일 완료된 retry count
+- waiting retry task table
+- 최근 retry task table
 
 ## Protocol Monitoring
 
 Path: `/admin/monitoring/protocols`
 
-Shows:
+표시 항목:
 
-- Total and active interface count by protocol
-- Today success and failure count by protocol
-- Last 7-day execution volume by protocol
-- Last 7-day daily trend
+- 프로토콜별 전체/활성 인터페이스 수
+- 프로토콜별 오늘 성공/실패 count
+- 프로토콜별 최근 7일 실행량
+- 최근 7일 일자별 trend
 
 ## File Transfer Monitoring
 
 Path: `/admin/monitoring/files`
 
-Shows:
+표시 항목:
 
-- Today transfer total, success, and failure counts
-- Recent SFTP/FTP transfer history
-- Direction, status, file name, remote path, latency, and linked execution detail
+- 오늘 파일 전송 전체/성공/실패 count
+- 최근 SFTP/FTP transfer history
+- transfer direction, status, file name, remote path, latency, execution detail link
 
 ## MQ Monitoring
 
 Path: `/admin/monitoring/mq`
 
-Shows:
+표시 항목:
 
-- Today publish success/failure counts
-- Today consume success/failure counts
-- Recent message destination, correlation key, publish status, consume status, latency, and linked execution detail
+- 오늘 publish 성공/실패 count
+- 오늘 consume 성공/실패 count
+- 최근 message destination, correlation key, publish status, consume status, latency, execution detail link
 
 ## Batch Monitoring
 
 Path: `/admin/monitoring/batch`
 
-Shows:
+표시 항목:
 
-- Today batch total, completed, failed, and running counts
-- Recent batch runs with read/write/skip counts
-- Links to batch run detail and unified execution detail
+- 오늘 Batch 전체/완료/실패/실행중 count
+- 최근 Batch run read/write/skip count
+- Batch run detail과 unified execution detail link
+
+## Interface List
+
+Path: `/admin/interfaces`
+
+역할:
+
+- 인터페이스 master data를 조회한다.
+- keyword, protocol type, status 기준으로 검색한다.
+- interface detail로 이동하여 설정과 실행을 확인한다.
+
+## Interface Detail
+
+Path: `/admin/interfaces/{id}`
+
+역할:
+
+- 인터페이스 기본 정보, 제휴사, 내부 시스템, 상태를 보여준다.
+- protocol type에 맞는 설정 panel을 보여준다.
+- manual execution form을 제공한다.
+- 최근 execution 이력을 보여준다.
 
 ## Execution History
 
 Path: `/admin/executions`
 
-Filters:
+Filter:
 
 - Keyword
 - Protocol type
@@ -115,17 +136,17 @@ Filters:
 - Started from date
 - Started to date
 
-The list links to execution detail pages where protocol request/response, step logs, retry tasks, MQ messages, file transfers, and batch runs remain visible.
+목록에서 execution detail로 이동하면 protocol request/response, step log, retry task, MQ message, file transfer, batch run 정보를 확인할 수 있습니다.
 
 ## Reviewer Demo Flow
 
-The UI is optimized for this path:
+UI는 다음 시연 흐름에 맞춰 구성되어 있습니다.
 
-1. Login.
-2. Dashboard.
-3. Interface list.
-4. Interface detail and protocol configuration.
-5. Manual execution.
-6. Execution detail.
-7. Controlled failure and retry.
-8. Monitoring pages for failures, retries, protocols, files, MQ, and batch.
+1. Login
+2. Dashboard
+3. Interface list
+4. Interface detail and protocol configuration
+5. Manual execution
+6. Execution detail
+7. Controlled failure and retry
+8. Monitoring pages for failures, retries, protocols, files, MQ, and batch
