@@ -39,6 +39,18 @@ public interface InterfaceExecutionRepository extends JpaRepository<InterfaceExe
             LocalDateTime endExclusive
     );
 
+    @Query("""
+            select e.protocolType, e.executionStatus, count(e)
+            from InterfaceExecution e
+            where e.startedAt >= :startInclusive
+              and e.startedAt < :endExclusive
+            group by e.protocolType, e.executionStatus
+            """)
+    List<Object[]> countByProtocolTypeAndStatusBetweenGroup(
+            @Param("startInclusive") LocalDateTime startInclusive,
+            @Param("endExclusive") LocalDateTime endExclusive
+    );
+
     @EntityGraph(attributePaths = {"interfaceDefinition"})
     List<InterfaceExecution> findTop10ByOrderByCreatedAtDesc();
 
