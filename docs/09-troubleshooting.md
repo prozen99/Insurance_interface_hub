@@ -700,3 +700,287 @@ $env:Path="$env:JAVA_HOME\bin;$env:Path"
 - terminal에서 Gradle을 실행하기 전 `java -version`을 먼저 확인한다.
 - IntelliJ Project SDK와 terminal `JAVA_HOME`이 모두 Java 21을 가리키도록 맞춘다.
 - 새 PC나 새 shell에서 demo를 진행하기 전 `.\gradlew.bat --version`으로 Gradle 실행 가능 여부를 확인한다.
+
+## Railway Java 21 Toolchain Not Found
+
+증상:
+
+- Railway build 중 `Cannot find a Java installation matching languageVersion=21` 오류가 발생한다.
+- Gradle wrapper는 실행되지만 Java 21 toolchain을 찾지 못한다.
+
+원인:
+
+- Railway/Nixpacks build 환경에서 Gradle toolchain이 Java 21 설치를 자동으로 찾지 못했다.
+- 프로젝트는 `build.gradle`에서 Java 21 toolchain을 요구한다.
+
+해결:
+
+- Railway Spring Boot service Variables에 다음 값을 추가한다.
+
+```text
+NIXPACKS_JDK_VERSION=21
+NIXPACKS_GRADLE_VERSION=8
+```
+
+- 이후 `chmod +x gradlew && ./gradlew clean bootJar -x test`로 다시 build한다.
+
+재발 방지:
+
+- deployment guide에 필수 Nixpacks 변수를 명시한다.
+- buildpack/Nixpacks 환경에서 사용하는 Java version과 Gradle wrapper version을 함께 확인한다.
+
+## GitHub/Railway Source Sync 문제
+
+증상:
+
+- 로컬과 `origin/main`에는 파일이 있는데 Railway build에서 특정 package를 찾지 못한다.
+- 예: `com.insurancehub.protocol.filetransfer` package 없음, `com.insurancehub.monitoring` package 없음.
+
+원인:
+
+- Railway가 최신 commit이 아닌 이전 deployment를 재빌드했다.
+- Railway Source 설정의 repo, branch, root directory가 기대와 다르거나 source sync가 늦었다.
+- 로컬에는 파일이 있지만 GitHub에 아직 push되지 않은 상태일 수 있다.
+
+해결:
+
+- 누락 source를 GitHub `origin/main`에 commit/push한다.
+- Railway Source에서 repo, branch `main`, root directory를 확인한다.
+- 필요하면 빈 commit으로 최신 source 기준 배포를 다시 trigger한다.
+
+재발 방지:
+
+- Railway deployment 화면의 commit message/hash와 GitHub 최신 commit hash를 비교한다.
+- 배포 전 `git status`, `git log origin/main -1`, Railway Source 설정을 확인한다.
+
+## 누락 Source Package Commit 문제
+
+증상:
+
+- SFTP/FTP와 Monitoring 관련 import가 compile되지 않는다.
+- `FileTransferExecutionService`, `FileTransferConfigService`, `OperationsMonitoringService` 등을 찾지 못한다.
+
+원인:
+
+- 일부 package가 로컬 workspace에는 있었지만 GitHub에 commit/push되지 않았다.
+- 또는 Railway가 최신 commit을 기준으로 build하지 않았다.
+
+해결:
+
+- 다음 package와 관련 테스트를 commit/push한다.
+
+```text
+src/main/java/com/insurancehub/protocol/filetransfer
+src/main/java/com/insurancehub/monitoring
+```
+
+- Railway를 최신 commit 기준으로 재배포한다.
+
+재발 방지:
+
+- 배포 전 `git status --short`로 untracked source가 없는지 확인한다.
+- `git ls-files`로 실제 commit 대상에 포함되었는지 확인한다.
+- GitHub `origin/main`에서 package가 보이는지 확인한다.
+
+## Repository Method 누락으로 `compileJava` 실패
+
+증상:
+
+- `OperationsMonitoringService`에서 호출하는 repository count method가 없어 `compileJava`가 실패한다.
+- 예:
+  - `MqMessageHistoryRepository.countByPublishStatusAndCreatedAtBetween`
+  - `MqMessageHistoryRepository.countByConsumeStatusAndCreatedAtBetween`
+  - `BatchRunHistoryRepository.countByBatchStatusAndCreatedAtBetween`
+
+원인:
+
+- Phase 9 monitoring 성능 개선 과정에서 service code와 repository interface 변경이 함께 commit되지 않았다.
+
+해결:
+
+- `MqMessageHistoryRepository`, `BatchRunHistoryRepository`에 누락된 count query method를 추가한다.
+- 관련 service test를 실행한 뒤 commit/push한다.
+
+재발 방지:
+
+- monitoring service 변경 시 repository interface와 test를 함께 commit한다.
+- 배포 전 local에서 `.\gradlew.bat clean bootJar -x test` 또는 `.\gradlew.bat test`를 실행한다.
+
+## Railway MySQL Environment Variables 설정
+
+증상:
+
+- 배포 환경에서 DB 연결이 필요하지만 local MySQL은 사용할 수 없다.
+- datasource URL 또는 credential 오류로 startup이 실패할 수 있다.
+
+원인:
+
+- Railway 배포 환경에서는 local MySQL이 아니라 Railway MySQL service를 사용해야 한다.
+- Railway가 제공하는 `MYSQL_URL`은 `mysql://...` 형식이라 Spring JDBC URL로 그대로 사용할 수 없다.
+
+해결:
+
+- Spring Boot service Variables에 다음 형식으로 등록한다.
+
+```text
+SPRING_PROFILES_ACTIVE=prod
+INSURANCE_HUB_DB_URL=jdbc:mysql://${{MySQL.MYSQLHOST}}:${{MySQL.MYSQLPORT}}/${{MySQL.MYSQLDATABASE}}?serverTimezone=Asia/Seoul&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true
+INSURANCE_HUB_DB_USERNAME=${{MySQL.MYSQLUSER}}
+INSURANCE_HUB_DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+```
+
+주의:
+
+- `mysql://` 형식의 `MYSQL_URL`을 그대로 쓰지 않는다.
+- 실제 password는 문서에 적지 않고 Railway Variables/Secrets에만 저장한다.
+
+재발 방지:
+
+- deployment guide에 JDBC URL 조합 방식을 명시한다.
+- `/actuator/health`와 Railway deploy log에서 Flyway migration 결과를 확인한다.
+
+## Railway Public URL 미생성
+
+증상:
+
+- 배포는 성공했지만 Railway에서 `Unexposed service`로 표시된다.
+- 외부 browser에서 서비스에 접속할 수 없다.
+
+원인:
+
+- Public Networking 또는 Generate Domain이 아직 활성화되지 않았다.
+
+해결:
+
+- Railway service Settings로 이동한다.
+- Networking 메뉴에서 Generate Domain을 실행한다.
+- 생성된 public URL로 `/actuator/health`를 확인한다.
+
+검증:
+
+```text
+https://insuranceinterfacehub-production.up.railway.app/actuator/health
+```
+
+응답:
+
+```json
+{"status":"UP"}
+```
+
+재발 방지:
+
+- 배포 완료 후 public domain 생성 여부를 배포 checklist에 포함한다.
+
+## Railway REST 실행 시 502
+
+증상:
+
+- 화면 접근, 로그인, 인터페이스 목록은 정상이다.
+- REST 실행 `POST /admin/interfaces/{id}/execute`에서 502가 발생한다.
+
+원인:
+
+- REST endpoint configuration의 `baseUrl`이 `http://localhost:8080`으로 남아 있었다.
+- Railway 환경에서 `localhost:8080`은 외부 배포 URL과 맞지 않는다.
+
+해결:
+
+- REST config `baseUrl`을 Railway 배포 URL로 변경한다.
+
+```text
+https://insuranceinterfacehub-production.up.railway.app
+```
+
+- 결과 endpoint:
+
+```text
+https://insuranceinterfacehub-production.up.railway.app/simulator/rest/premium/calculate
+```
+
+검증:
+
+- REST 실행 결과 `SUCCESS`
+- HTTP status `200`
+- step log `SUCCESS`
+
+재발 방지:
+
+- Railway 배포 후 REST/SOAP config URL을 public domain 기준으로 확인한다.
+- seed data는 local demo 기준이라는 점을 deployment guide에 명시한다.
+
+## Railway SOAP Endpoint URL 변경
+
+증상:
+
+- SOAP endpoint가 `localhost:8080` 기준이면 배포 환경에서 호출이 실패할 수 있다.
+
+원인:
+
+- SOAP seed endpoint URL이 local demo 기준으로 설정되어 있다.
+
+해결:
+
+- SOAP config `endpointUrl`을 Railway public URL로 변경한다.
+
+```text
+https://insuranceinterfacehub-production.up.railway.app/simulator/soap/policy-inquiry
+```
+
+검증:
+
+- SOAP 실행 결과 `SUCCESS`
+- HTTP status `200`
+- response XML status `SUCCESS`
+
+재발 방지:
+
+- 배포 후 SOAP config도 REST config와 함께 public domain 기준으로 점검한다.
+
+## Favicon 500/502 부가 로그
+
+증상:
+
+- browser가 자동으로 `/favicon.ico`를 호출하며 500 또는 502 로그가 발생한다.
+
+원인:
+
+- favicon static resource가 없거나 인증/에러 처리 흐름의 영향을 받는다.
+
+해결:
+
+- 핵심 기능 검증에는 영향이 작으므로 제출용 데모에서는 우선순위를 낮춘다.
+- 필요하면 `src/main/resources/static/favicon.ico`를 추가할 수 있다.
+
+재발 방지:
+
+- production polish 단계에서는 정적 favicon resource를 추가한다.
+- smoke check에서는 `/actuator/health`, `/login`, `/admin`, protocol execution 결과를 우선 확인한다.
+
+## Railway 배포 환경 한계
+
+증상:
+
+- 로컬에서는 가능한 SFTP/FTP demo server 또는 Batch scheduler가 Railway demo URL에서는 제한될 수 있다.
+
+원인:
+
+- Railway 배포 환경은 추가 port 노출, filesystem persistence, long-running scheduler 운영에 제약이 있다.
+
+해결:
+
+- 배포 환경에서는 다음 값을 기본으로 사용한다.
+
+```text
+APP_FILE_TRANSFER_SFTP_ENABLED=false
+APP_FILE_TRANSFER_FTP_ENABLED=false
+APP_BATCH_SCHEDULER_ENABLED=false
+```
+
+- Railway demo는 REST, SOAP, MQ, Batch 수동 실행, 실행 이력, monitoring 중심으로 시연한다.
+- 전체 SFTP/FTP upload/download는 로컬 환경에서 시연한다.
+
+재발 방지:
+
+- README와 deployment guide에 local demo와 Railway demo의 차이를 명확히 적는다.
+- 포트폴리오 설명 시 "배포 URL은 화면/주요 flow 확인용, 로컬 실행은 전체 protocol 검증용"이라고 구분한다.

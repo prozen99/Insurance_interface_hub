@@ -167,3 +167,40 @@
 - 핵심 화면 screenshot 또는 짧은 demo video
 - test/build 결과
 - 알려진 한계 설명
+
+## Railway 배포 검증 결과
+
+배포 URL:
+
+- `https://insuranceinterfacehub-production.up.railway.app/login`
+
+확인 완료:
+
+- `/actuator/health` 성공
+- 로그인 성공
+- 관리자 콘솔 접근 성공
+- REST 실행 성공
+- SOAP 실행 성공
+- Monitoring에서 실행 집계 확인 가능
+
+확인 예정:
+
+- MQ 수동 실행
+
+배포 URL 기준 추천 시연 흐름:
+
+1. `https://insuranceinterfacehub-production.up.railway.app/login` 접속
+2. `admin` / `admin123!` 로그인
+3. 대시보드 확인
+4. 인터페이스 목록 이동
+5. REST 실행 및 execution detail 확인
+6. SOAP 실행 및 response XML 확인
+7. MQ 실행
+8. 실행 이력 확인
+9. Monitoring 화면에서 execution summary 확인
+
+배포 환경 한계:
+
+- SFTP/FTP demo server는 Railway 추가 포트 노출 제약 때문에 비활성화한다.
+- Batch scheduler는 데모 URL에서 기본 비활성화한다.
+- REST/SOAP 설정은 Railway public URL 기준으로 조정해야 한다.

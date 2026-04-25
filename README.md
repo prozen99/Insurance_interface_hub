@@ -27,19 +27,32 @@ Korean title: 보험사 금융 IT 인터페이스 통합관리시스템
 
 ## 배포 데모
 
-- Demo URL: `https://<your-railway-service-domain>`
-- Login: `https://<your-railway-service-domain>/login`
-- Dashboard: `https://<your-railway-service-domain>/admin`
+- Demo URL: `https://insuranceinterfacehub-production.up.railway.app/login`
+- Base URL: `https://insuranceinterfacehub-production.up.railway.app`
+- Dashboard: `https://insuranceinterfacehub-production.up.railway.app/admin`
 - Demo account: `admin` / `admin123!`
 - Railway 배포 문서: [Railway 배포 가이드](docs/14-deployment-guide.md)
 
 Railway 배포는 portfolio reviewer가 화면과 주요 흐름을 빠르게 확인하기 위한 데모 URL입니다. REST/SOAP simulator, MQ embedded Artemis, 수동 Batch 실행은 같은 Spring Boot app 안에서 동작하도록 구성했습니다. SFTP/FTP embedded demo server는 Railway port 제약을 피하기 위해 `prod` profile에서 기본 비활성화하며, 전체 파일 전송 시연은 로컬 실행을 권장합니다.
 
-REST/SOAP seed data는 local demo 기준 `localhost:8080` URL을 사용합니다. Railway에서 REST/SOAP 실행까지 시연하려면 배포 후 admin UI에서 REST `baseUrl`과 SOAP `endpointUrl`을 Railway public domain으로 수정하면 됩니다.
+배포 후 `/actuator/health`, 로그인, 관리자 콘솔, REST 실행, SOAP 실행까지 확인했습니다. MQ 실행은 확인 예정이며, monitoring 화면에서는 실행 집계를 확인할 수 있습니다.
+
+REST/SOAP seed data는 local demo 기준 `localhost:8080` URL을 사용합니다. Railway에서 REST/SOAP 실행까지 시연하려면 배포 후 admin UI에서 REST `baseUrl`과 SOAP `endpointUrl`을 Railway public domain으로 수정해야 합니다.
 
 Railway/Nixpacks는 Gradle 9 wrapper에서 build가 실패할 수 있어 Gradle wrapper는 `8.14.3`을 사용합니다. Railway build/start command는 [Railway 배포 가이드](docs/14-deployment-guide.md)에 정리되어 있습니다.
 
 로컬 IntelliJ terminal에서 Gradle을 실행할 때 `JAVA_HOME is not set` 오류가 나면 JDK 21 경로를 `JAVA_HOME`과 `Path`에 설정한 뒤 다시 실행합니다.
+
+추천 배포 URL 시연 흐름:
+
+1. 로그인
+2. 대시보드 확인
+3. 인터페이스 목록 이동
+4. REST 실행
+5. SOAP 실행
+6. MQ 실행
+7. 실행 이력 확인
+8. 모니터링 확인
 
 ## 왜 만들었는가
 
